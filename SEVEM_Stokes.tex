@@ -62,10 +62,12 @@
 \newcommand{\XH}[1]{\textcolor{blue}{#1}}
 \newcommand{\RW}[1]{\textcolor{cyan}{#1}}
 \newcommand{\RZ}[1]{\textcolor{brown}{#1}}
+% Substantive proofreading changes; use #1 alone for a clean copy.
+\newcommand{\AI}[1]{{\color{blue}#1}}
 
 
 
-\title{A Stabilizer Free Weak Virtual Element Method for the
+\title{A Stabilizer-Free Weak Virtual Element Method for the
 Stokes Problem on Polytopal Meshes\thanks{Submitted to the editors DATE.
 \funding{The first author was supported by ...}}}
 
@@ -84,10 +86,12 @@ Changchun, Jilin 130012, China
   (\email{wangrs\_math@jlu.edu.cn}).}
 }
 
-
-
-
 \begin{document}
+
+
+
+\maketitle
+
 
 
 
@@ -112,14 +116,72 @@ Changchun, Jilin 130012, China
 %65N12: Stability and convergence of numerical methods
 %74B05: Classical linear elasticity
 
-\section{VEM spaces}
+\section{Introduction}\label{sec:introduction}
+
+\AI{A discretization of incompressible Stokes flow must preserve mass and
+control the velocity through its symmetric gradient. On polygonal and
+polyhedral meshes, these requirements call for discrete spaces with suitable
+normal and tangential traces. The virtual element method provides such spaces
+on general polytopes. Its degrees of freedom determine the polynomial
+projections needed to assemble the discrete problem without evaluating the
+virtual basis functions \cite{BBCMMR2013}. In standard formulations, a
+stabilization term controls the part of a virtual function that its polynomial
+projection does not capture.
+
+The $H(\operatorname{div})$-conforming virtual elements of
+Beir\~ao da Veiga, Brezzi, Marini, and Russo \cite{BBMR2016} provide continuous
+normal traces and polynomial divergence. Chen and Wang \cite{ChenWang2019}
+combined these elements with tangential face unknowns and a weak symmetric
+gradient to obtain a divergence-free weak virtual element method for the
+Stokes problem. Their formulation includes a stabilization term that controls
+the boundary mismatch between the projected cell velocity and its traces.
+This framework gives a natural starting point for a method whose weak strain
+alone controls that mismatch.
+
+Stabilizer-free methods achieve stability through the choice of the local
+reconstruction space. Mu, Ye, and Zhang \cite{MuYeZhang2021} developed a
+stabilizer-free weak Galerkin method for the Stokes equations on polytopal
+meshes. For second-order elliptic problems, Chen, Huang, and Wei
+\cite{ChenHuangWei2024} constructed virtual element methods without extrinsic
+stabilization by using stable gradient projections onto macro finite element
+spaces. These results motivate local reconstructions that retain enough
+information to control the discrete energy. For the symmetric-gradient
+formulation of Stokes flow, the reconstruction must also account for rigid
+motions and the coupling of normal and tangential velocity traces.
+
+Here we develop a stabilizer-free weak virtual element method in two and
+three dimensions. The velocity consists of an $H(\operatorname{div})$ virtual
+field and a tangential polynomial field on the primal mesh faces. The pressure
+is a discontinuous polynomial of degree $k-1$. We reconstruct the weak strain
+in a symmetric tensor space that is polynomial on the cones joining each
+element's star center to its faces. The strain is computed locally from the
+velocity degrees of freedom. The tensor space provides independent face
+moments and volume moments that control both the symmetric gradient of the
+projected velocity and the boundary mismatch. The discrete viscous energy
+is the squared $L^2$ norm of this weak strain.
+
+Under the stated mesh regularity and a uniform spanning condition on the
+face-tangential symmetric tensors, we prove norm equivalence, coercivity,
+and the velocity--pressure inf-sup condition. The discrete velocity is exactly
+divergence-free on every primal element. For sufficiently smooth solutions,
+we obtain order-$h^k$ error bounds in the discrete velocity norm and the
+$L^2$ pressure norm. The spanning condition is an explicit assumption of the
+analysis. The numerical section reports two-dimensional tests and identifies
+the rectangular-mesh results as tests outside this assumption.
+
+Section~\ref{sec:spaces} introduces the meshes, velocity spaces, and
+projections. Section~\ref{sec:strain} constructs the weak strain and proves
+its stability. Section~\ref{sec:scheme} presents the discrete problem and
+error estimates. Section~\ref{sec:numerics} gives the numerical results.}
+
+\section{VEM spaces}\label{sec:spaces}
 
 Let \(\Omega \subset \mathbb{R}^d\), \(d = 2, 3\) be a bounded and simply connected polytopal domain. Given an
 external force field \(\boldsymbol{f} \in \boldsymbol{L}^2(\Omega)\), we consider the steady-state incompressible Stokes problem:
-\begin{equation}
+\begin{equation}\label{eq:stokes}
 \left\{
 \begin{aligned}
--\operatorname{div}(\boldsymbol{\varepsilon}(\boldsymbol{u})) + \nabla p &= \boldsymbol{f} \quad \text{in } \Omega, \\
+-\operatorname{div}(\varepsilon(\boldsymbol{u})) + \nabla p &= \boldsymbol{f} \quad \text{in } \Omega, \\
 \operatorname{div} \boldsymbol{u} &= 0 \quad \text{in } \Omega, \\
 \boldsymbol{u} &= \boldsymbol{0} \quad \text{on } \partial\Omega.
 \end{aligned}
@@ -127,11 +189,31 @@ external force field \(\boldsymbol{f} \in \boldsymbol{L}^2(\Omega)\), we conside
 \end{equation}
 
 
+\AI{Here $\varepsilon(\boldsymbol u):=(\nabla\boldsymbol u+
+\nabla\boldsymbol u^{\mathsf T})/2$ is the symmetric strain, and the pressure
+is normalized by $\int_\Omega p\,\mathrm dx=0$. We use $(\cdot,\cdot)_K$ and
+$\langle\cdot,\cdot\rangle_{\partial K}$ for the volume and boundary $L^2$
+inner products, and $\|\cdot\|_K$ and $\|\cdot\|_{\partial K}$ for their norms.
+}
+
 \subsection{Primal and dual meshes}
-Let $\mathcal{K}_h$ be a shape-regular polytopal mesh of the domain $\Omega$. We assume each element $K\in\mathcal{K}_h$ is a star-shaped polytope with a bounded chunkiness parameter. Let $\mathcal{F}_h$ be the set of $(d-1)$-dimensional faces of $\mathcal{K}_h$, and $\mathring{\mathcal{F}}_h^{K}=\mathcal{F}_h \setminus \partial \Omega$. We call $\mathcal{K}_h$ the primal mesh.
+\AI{Let $\mathcal K_h$ be a conforming polytopal mesh of $\Omega$.
+Each element $K$ is star-shaped with respect to a ball of radius at least
+$\rho h_K$, where $h_K=\operatorname{diam}K$ and $\rho>0$ is independent of
+$h:=\max_K h_K$. Let $\boldsymbol x_K$ be the center of such a ball.
+We assume a uniformly bounded number of faces per element. In three dimensions,
+each face is also uniformly star-shaped. The cones
+$T=\{\boldsymbol x_K+t(\boldsymbol y-\boldsymbol x_K):\boldsymbol y\in F,\ 0\leq t\leq1\}$ form a refinement $\mathcal T_h$;
+they are triangles in two dimensions and pyramids in three dimensions.
+We assume that these cones admit a conforming, uniformly shape-regular
+simplicial refinement with simplex diameters comparable to $h_K$.
+In particular, $h_F:=\operatorname{diam}F$ is comparable to $h_K$.
+These assumptions are used in the trace, inverse, and scaling estimates below.}
 
-
-For each $K\in\mathcal{K}_h$, let $\boldsymbol{x}_K$ be the center of the largest ball inside $K$. Connecting $\boldsymbol{x}_K$ to the vertices of $K$ gives a shape-regular refinement $\mathcal{T}_h$. Let $\mathcal{T}_h(K)$ be the set of pyramids in $K$. Let $\mathcal{F}_h^T$ be the set of $(d-1)$-dimensional faces of $\mathcal{T}_h$, and $\mathring{\mathcal{F}}_h^{T}=\mathcal{F}_h^T \setminus \partial \Omega$.
+Let $\mathcal F_h$ and $\mathcal F_h^T$ be the face sets of $\mathcal K_h$
+and $\mathcal T_h$, respectively. Their interior faces are denoted by
+$\mathring{\mathcal F}_h^K$ and $\mathring{\mathcal F}_h^T$.
+Let $\mathcal T_h(K)$ be the set of cones in $K$.
 
 Let $F \in \partial K$ be a face with unit normal $\boldsymbol{n}_F$ and orthonormal tangent vectors $\{\boldsymbol{t}_i^{F}\}_{i=1}^{d-1}$. For any $\boldsymbol{v}\in\mathbb{R}^d$, the tangential part on $F$ is
 $$
@@ -139,7 +221,7 @@ $$
 =\sum_{i=1}^{d-1}(\boldsymbol{v}\cdot\boldsymbol{t}_i^{F})\boldsymbol{t}_i^{F}.
 $$
 
-Define the following spaces on $F$:
+With $\sym A=(A+A^{\mathsf T})/2$ and $\skw A=(A-A^{\mathsf T})/2$, define
 \begin{align*}
 \mathscr T^F&:=\textrm{span}\{\boldsymbol{t}_1^F, \ldots, \boldsymbol{t}_{d-1}^F\}, \\
 \mathscr T^F(\mathbb S)&:=\textrm{span}\{{\rm sym}(\boldsymbol{t}_i^F\otimes \boldsymbol{t}_j^F) \;\;\textrm{ for } 1\leq i\leq j\leq d-1\}, \\
@@ -154,11 +236,16 @@ These subspaces give the following $\boldsymbol{t}$-$\boldsymbol{n}$ decompositi
 \end{align}
 
 
-For \(K \in \mathcal{K}_h\), let \(\mathbb{P}_k(K)\) be the space of polynomials on \(K\) of degree at most \(k\). Let \(\mathbb{P}_k(K; \mathbb{X}) = \mathbb{P}_k(K) \otimes \mathbb{X}\), where \(\mathbb{X}\) is \(\mathbb{R}^d\) for vectors, \(\mathbb{S}\) for symmetric matrices, and \(\mathbb{K}\) for skew-symmetric matrices.
+\AI{Fix an integer $k\geq1$.} For \(K \in \mathcal{K}_h\), let \(\mathbb{P}_k(K)\) be the space of polynomials on \(K\) of degree at most \(k\). Let \(\mathbb{P}_k(K; \mathbb{X}) = \mathbb{P}_k(K) \otimes \mathbb{X}\), where \(\mathbb{X}\) is \(\mathbb{R}^d\) for vectors, \(\mathbb{S}\) for symmetric matrices, and \(\mathbb{K}\) for skew-symmetric matrices.
+
+\AI{We set $\mathbb P_j=\{0\}$ for $j<0$, and
+$\mathbf{RM}(K)=\{\boldsymbol a+\boldsymbol B\boldsymbol x:
+\boldsymbol a\in\mathbb R^d,\ \boldsymbol B\in\mathbb K\}$.}
 
 \subsection{VEM spaces}
 
-
+\AI{The local velocity space and its degrees of freedom are the
+$H(\operatorname{div})$ virtual elements of \cite{BBMR2016}.}
 On each element \(K\in\mathcal{K}_h\),  we introduce a local space
 \begin{equation*}
 \boldsymbol{V}_K = \left\{ 
@@ -175,77 +262,84 @@ The global virtual element space is
 \end{equation*}
 
 
-The degree of freedoms (d.o.f.) for functions in \(\boldsymbol{V}_K\) are stated as
+The degrees of freedom (DoFs) for $\boldsymbol V_K$ are
 \begin{align*}
 \text{Type I} \qquad & \int_F \boldsymbol{v} \cdot \boldsymbol{n} q_k \, \mathrm{d}s \qquad \forall q_k \in \mathbb{P}_k(F), F \subset \partial K, \\
 \text{Type II} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_{k-2} \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_{k-2} \in \mathbf{G}_{k-2}(K), \\
-\text{Type III} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_k \in \mathbb{P}_k(K;\mathbb{R}^d) \backslash \mathbf{G}_k(K),
+\text{Type III} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_k \in \AI{\mathbf G_k(K)^\perp},
 \end{align*}
-where \(\mathbf{G}_k(K)\) stands for the range of the gradient of the polynomial space \(\mathbb{P}_{k+1}(K)\).
+where $\mathbf G_k(K)=\nabla\mathbb P_{k+1}(K)$.
+\AI{Here $\mathbf G_k(K)^\perp$ is its $L^2(K)$-orthogonal complement in
+$\mathbb P_k(K;\mathbb R^d)$. Moments are taken against a basis of each
+listed space. These DoFs are unisolvent \cite{BBMR2016}.}
 
 On each face \(F \in \mathcal{F}_h\), we introduce a space 
 $$
 \boldsymbol{V}_F := \mathbb{P}_{k-1}(F;\mathscr T^F) + \mathbf{RM}(F),
 $$
- where \(\mathbf{RM}(F)\) denotes the space of rigid motions, i.e., \(\mathbf{RM}(F) :=\Pi_F \mathbf{RM}(K)= \mathbb{P}_0(F; \mathscr T^F) \oplus \mathbb{P}_0(F; \mathscr T^F(\mathbb K)) \boldsymbol{x}\). The d.o.f. for functions in \(\boldsymbol{V}_F\) are
+ where \(\mathbf{RM}(F)\) denotes the space of rigid motions, i.e., \(\mathbf{RM}(F) :=\Pi_F \mathbf{RM}(K)= \mathbb{P}_0(F; \mathscr T^F) \oplus \mathbb{P}_0(F; \mathscr T^F(\mathbb K)) \boldsymbol{x}\). The DoFs for functions in \(\boldsymbol{V}_F\) are
 \[
 \int_F \boldsymbol{v} \cdot \boldsymbol{q} \, \mathrm{d}s \quad \forall \boldsymbol{q} \in \mathbb{P}_{k-1}(F;\mathscr T^F) + \mathbf{RM}(F).
 \]
 
-Then, the element boundary space is defined as
+The tangential face space is
 \[
 \boldsymbol{V}_h^t := \{ \boldsymbol{v}^t, \boldsymbol{v}^t|_F \in \boldsymbol{V}_F, F \in \mathcal{F}_h, \boldsymbol{v}^t = \boldsymbol{0} \text{ on } \partial \Omega \}.
 \]
 
-Combining the above two kinds of spaces together, gives our weak virtual finite element space:
+The weak virtual element space is
 \[
 \boldsymbol{V}_h := \left\{ \{ \boldsymbol{v}_h^{\operatorname{div}}, \boldsymbol{v}_h^t \}, \boldsymbol{v}_h^{\operatorname{div}} \in \boldsymbol{V}_h^{\operatorname{div}}, \boldsymbol{v}_h^t \in \boldsymbol{V}_h^t \right\}.
 \]
 
 \subsection{Projection operator}
 
-On each \(K\in\mathcal{K}_h\), we shall define a \(\boldsymbol{L}^2\) projection. For each \(\boldsymbol{v} \in \boldsymbol{V}_K\), let \(\boldsymbol{\Pi}_K^o \boldsymbol{v} \in \mathbb{P}_k(K;\mathbb{R}^d)\) satisfy
+\AI{For $\boldsymbol v\in\boldsymbol L^2(K)$,} let \(\boldsymbol{\Pi}_K^o \boldsymbol{v} \in \mathbb{P}_k(K;\mathbb{R}^d)\) satisfy
 \[
-\int_K \boldsymbol{\Pi}_K^o \boldsymbol{v} \cdot \boldsymbol{q} := \int_K \boldsymbol{v} \cdot \boldsymbol{q} \quad \forall \boldsymbol{q} \in \mathbb{P}_k(K;\mathbb{R}^d).
+\int_K \boldsymbol{\Pi}_K^o \boldsymbol{v} \cdot \boldsymbol{q}\,\mathrm dx = \int_K \boldsymbol{v} \cdot \boldsymbol{q}\,\mathrm dx \quad \forall \boldsymbol{q} \in \mathbb{P}_k(K;\mathbb{R}^d).
 \]
 
-Although the function in \(\boldsymbol{V}_K\) is virtual, the \(\boldsymbol{L}^2\) projection is computable. In view of Type III d.o.f., we only need to determine \(\int_K \boldsymbol{v} \cdot \nabla p_{k+1}\) for \(p_{k+1} \in \mathbb{P}_{k+1}(K)\) which is again computable through integration by parts
+For $\boldsymbol v\in\boldsymbol V_K$, Type III DoFs give the moments in $\mathbf G_k(K)^\perp$. The remaining moments follow by integration by parts: for $p_{k+1}\in\mathbb P_{k+1}(K)$,
 \[
 \int_K \boldsymbol{v} \cdot \nabla p_{k+1} \, \mathrm{d}\boldsymbol{x} = - \int_K \operatorname{div} \boldsymbol{v} \, p_{k+1} \, \mathrm{d}\boldsymbol{x} + \int_{\partial K} \boldsymbol{v} \cdot \boldsymbol{n} \, p_{k+1} \, \mathrm{d}s.
 \]
 
-Note that although \(p_{k+1} \in \mathbb{P}_{k+1}(K)\), the polynomials \(\operatorname{div} \boldsymbol{v}\) and \(\boldsymbol{v} \cdot \boldsymbol{n}\) have been computed and considered as known.
+\AI{The normal trace is determined by Type I DoFs. The divergence is determined
+by Type I and II DoFs through
+\[
+(\operatorname{div}\boldsymbol v,q)_K
+=-(\boldsymbol v,\nabla q)_K+\langle\boldsymbol v\cdot\boldsymbol n,q\rangle_{\partial K},
+\qquad q\in\mathbb P_{k-1}(K).
+\]
+Thus every term above is computable \cite{BBMR2016}. We write
+$(\boldsymbol\Pi_h^o\boldsymbol v)|_K=\boldsymbol\Pi_K^o(\boldsymbol v|_K)$.}
 
 
 
-\section{Weak strain}
+\section{Weak strain}\label{sec:strain}
 
 \subsection{Weak strain space}
-For $T\in\mathcal{T}_h$, the local weak strain space is defined as
-\begin{align*}
-&\Sigma_k(T)= \sym(\boldsymbol{n}_F\otimes V_{k}(F)) + \mathbb{P}_{k-1}(T;\mathbb S)\\
-&= (\boldsymbol{n}_F\otimes\boldsymbol{n}_F\mathbb{P}_k(T)) \oplus \sym(\boldsymbol{n}_F\otimes (\mathbb{P}_{k-1}(T;\mathscr T^F) + \mathbf{RM}(F)))\oplus \mathbb{P}_{k-1}(T;\mathscr T^F(\mathbb S)),
-\end{align*}
-where $F\in\mathcal{F}_h^{K}\cap \partial T$ and
-$$V_{k}(F) := \mathbb{P}_k(F) \boldsymbol{n}_F \oplus \boldsymbol{V}_F.$$
-
-For $k=1$, we have
-\begin{align*}
-\Sigma_1(T)= (\boldsymbol{n}_F\otimes\boldsymbol{n}_F\mathbb{P}_1(T)) \oplus \sym(\boldsymbol{n}_F\otimes \mathbf{RM}(F))\oplus \mathbb{P}_{0}(T;\mathscr T^F(\mathbb S)).
-\end{align*}
-For $k>1$, we get
-\begin{align*}
-\Sigma_k(T)= (\boldsymbol{n}_F\otimes\boldsymbol{n}_F\mathbb{P}_k(T)) \oplus \sym(\boldsymbol{n}_F\otimes \mathbb{P}_{k-1}(T;\mathscr T^F))\oplus \mathbb{P}_{k-1}(T;\mathscr T^F(\mathbb S)).
-\end{align*}
-
-Note that, we naturally extend the domain of polynomials in $V_{k}(F)$ from $F$ to $K$ (or to a sub-element $T\in\mathcal T_h(K)$ sharing $F$) by assuming the function is constant along lines perpendicular to $F$. 
-
-
-The trace of $\Sigma_k(T)$ onto the face $F\in\mathcal{F}_h^{K}\cap \partial T$ is then given by
-\begin{equation*}
-\tr_F(\Sigma_k(T))=V_{k}(F). 
-\end{equation*}
-
+\AI{Let $T\in\mathcal T_h(K)$ have base face $F$.
+The local weak strain space is
+\begin{equation}\label{eq:strainspace}
+\begin{aligned}
+\Sigma_k(T)={}&\mathbb P_k(T)\boldsymbol n_F\otimes\boldsymbol n_F\\
+&\oplus\sym\!\left(\boldsymbol n_F\otimes
+  [\mathbb P_{k-1}(T;\mathscr T^F)+\mathbf{RM}(F)]\right)\\
+&\oplus\mathbb P_{k-1}(T;\mathscr T^F(\mathbb S)).
+\end{aligned}
+\end{equation}
+Face polynomials, including $\mathbf{RM}(F)$, are extended constantly along
+lines normal to $F$. For $k=1$, the middle block is
+$\sym(\boldsymbol n_F\otimes\mathbf{RM}(F))$; for $k>1$, it is
+$\sym(\boldsymbol n_F\otimes\mathbb P_{k-1}(T;\mathscr T^F))$.
+Set
+\[
+V_k(F):=\mathbb P_k(F)\boldsymbol n_F\oplus\boldsymbol V_F.
+\]
+The normal trace $\tr_F\boldsymbol\sigma:=\boldsymbol\sigma\boldsymbol n_F|_F$
+satisfies $\tr_F\Sigma_k(T)=V_k(F)$. In particular,
+$\mathbb P_{k-1}(K;\mathbb S)$ is contained in the piecewise strain space on $K$.}
 
 We define the local symmetric tensor space on $K$ as the discontinuous polynomial space
 \begin{align}\label{eq:202411132}
@@ -254,16 +348,21 @@ We define the local symmetric tensor space on $K$ as the discontinuous polynomia
 where $\chi_{T_i}$ is the characteristic function of $T_i$. We  define the bubble space
 \begin{equation}
 \begin{aligned}
-\mathbb{B}_k(\div,K;\mathbb{S})=&\{\boldsymbol{\tau}\in \Sigma_h^{-1}(K): \tr\boldsymbol{\tau} :=\boldsymbol{\tau}\boldsymbol{n}|_{\partial K}=\boldsymbol{0}\}\\
+\mathbb{B}_k(\div,K;\mathbb{S})=&\{\boldsymbol{\tau}\in \Sigma_h^{-1}(K): \boldsymbol{\tau}\boldsymbol{n}|_{\partial K}=\boldsymbol{0}\}\\
 =&\Oplus_{i=1}^n\lambda_{\boldsymbol{x}_K}\chi_{T_i}(\mathbb{P}_{k-1}(T_i)\boldsymbol{n}_i\otimes\boldsymbol{n}_i) \\
 \oplus
-&\Oplus_{i=1}^n\lambda_{\boldsymbol{x}_K}\chi_{T_i}\sym(\mathbb{P}_{k-2}(T_i; \mathscr T^F)\otimes\boldsymbol{n}_i) \\
+&\Oplus_{i=1}^n\lambda_{\boldsymbol{x}_K}\chi_{T_i}\sym(\mathbb{P}_{k-2}(T_i; \mathscr T^{F_i})\otimes\boldsymbol{n}_i) \\
 \oplus 
 &\Oplus_{i=1}^n\chi_{T_i}\mathbb{P}_{k-1}(T_i;\mathscr T^{F_i}(\mathbb S)).
 \end{aligned}
 \end{equation}
 
- \begin{assumption}\label{meshassumption}
+\AI{Here $F_i$ is the base face of $T_i$, $\boldsymbol n_i$ is its outward normal,
+and $\lambda_{\boldsymbol x_K}$ is the affine function on $T_i$ that equals
+one at $\boldsymbol x_K$ and zero on $F_i$. The bubble space imposes no
+continuity across the internal faces of $K$.}
+
+\begin{assumption}\label{meshassumption}
 There exist $d(d+1)/2$ symmetric tensors $b_\ell$ such that
 \begin{equation}
 \mathbb{S}=\text{span}\left\{ b_{\ell}, \ell=1,\ldots,d(d+1)/2\right\},\label{equ_assumption_ddpolytope}
@@ -272,9 +371,28 @@ where $\mathscr T^{F_i}(\mathbb S)=\textrm{span}\{ b_i^{m}, m=1,\ldots,d(d-1)/2\
 \begin{equation}
 \left\{ b_\ell\right\} \subset \left\{ b_i^m, i=1,\ldots,n, m=1,\ldots,d(d-1)/2\right\}.\label{equ_edge_vector_property}
 \end{equation}
+\AI{On every element, the tensors $b_\ell$ can be chosen with
+$|b_\ell|=1$ and
+\[
+\sum_{\ell=1}^{d(d+1)/2}c_\ell^2
+\lesssim\left|\sum_{\ell=1}^{d(d+1)/2}c_\ell b_\ell\right|^2
+\qquad\text{for all real coefficients }c_\ell,
+\]
+with a constant independent of $h$ and $K$. Here $|\cdot|$ is the Frobenius norm.}
 \end{assumption}
+\AI{All subsequent stability and error estimates assume
+Assumption~\ref{meshassumption}. Constants may depend on $k$, $\Omega$, the
+mesh regularity, and this tensor-basis bound, but not on $h$.}
 
-We now formally define the DoFs for the local stress space $\Sigma_h^{-1}(K)$.
+\AI{For each selected $b_\ell$, let $T_\ell$ be a cone whose base face
+has $b_\ell\in\mathscr T^{F_i}(\mathbb S)$, and define
+\[
+\mathcal E_K:=\bigoplus_{\ell=1}^{d(d+1)/2}
+\chi_{T_\ell}\mathbb P_{k-1}(T_\ell)b_\ell
+\subset\mathbb B_k(\operatorname{div},K;\mathbb S).
+\]
+In the following lemma, $\mathbb B_k\ominus\mathcal E_K$ denotes the
+$L^2(K)$-orthogonal complement of $\mathcal E_K$ within the bubble space.}
 
 \begin{lemma}\label{lemma_DOF}
 For $K\in\mathcal{K}_h$, the space $\Sigma_h^{-1}(K)$ is uniquely determined by the following DoFs:
@@ -284,13 +402,30 @@ For $K\in\mathcal{K}_h$, the space $\Sigma_h^{-1}(K)$ is uniquely determined by 
 \label{SigmaKDoFs1}
 \int_{F}\boldsymbol{\sigma}\boldsymbol{n}\cdot \boldsymbol{q}\ds,&\quad \boldsymbol{q}\in   V_{k}(F), F\in \partial K , \\
 \label{SigmaKDoFs2}
-\int_K\boldsymbol{\sigma}:\boldsymbol{\tau} \dx,& \quad  \boldsymbol{\tau}\in \mathbb{B}_k(\div,K;\mathbb{S})\setminus\Oplus_{\ell=1}^{d(d+1)/2}\left (\chi_{T_{\boldsymbol{e}_\ell}} \mathbb{P}_{k-1}(T_{\boldsymbol{e}_\ell})b_\ell \right ), \\
+\int_K\boldsymbol{\sigma}:\boldsymbol{\tau} \dx,& \quad  \AI{\boldsymbol\tau\in\mathbb B_k(\div,K;\mathbb S)\ominus\mathcal E_K}, \\
 \label{SigmaKDoFs3}
 \int_K\boldsymbol{\sigma}:\boldsymbol{\tau} \dx,& \quad  \boldsymbol{\tau}\in \mathbb{P}_{k-1}(K;\mathbb{S}),
 \end{align}
 \end{subequations}
-where $T_{\boldsymbol{e}_\ell}\in\mathcal{T}_h(K)$ is a sub-element containing the face basis $b_\ell$ chosen in \eqref{equ_edge_vector_property}.
+where moments are taken against bases of the listed spaces.
 \end{lemma}
+\AI{\begin{proof}
+Suppose all moments vanish. Since the normal trace belongs to $V_k(F)$,
+the face moments imply $\boldsymbol\sigma\boldsymbol n=0$ on $\partial K$.
+Thus $\boldsymbol\sigma$ is a bubble. The second group of moments then gives
+$\boldsymbol\sigma\in\mathcal E_K$, so
+$\boldsymbol\sigma=\sum_\ell\chi_{T_\ell}p_\ell b_\ell$ with
+$p_\ell\in\mathbb P_{k-1}(T_\ell)$.
+Let $b_\ell^*$ be the dual tensor basis, satisfying
+$b_j:b_\ell^*=\delta_{j\ell}$. Extend $p_\ell$ as a polynomial to $K$ and
+choose $\boldsymbol\tau=p_\ell b_\ell^*$ in \eqref{SigmaKDoFs3}. Then
+$\|p_\ell\|_{T_\ell}^2=0$ for every $\ell$, so $\boldsymbol\sigma=0$.
+The trace map is onto $\bigoplus_{F\subset\partial K}V_k(F)$ and has the
+bubble space as its kernel. Also,
+$\dim\mathcal E_K=\dim\mathbb P_{k-1}(K;\mathbb S)$.
+The number of moments therefore equals $\dim\Sigma_h^{-1}(K)$.
+This proves unisolvence.
+\end{proof}}
 
 Let
 \[
@@ -299,62 +434,59 @@ Let
 
 \subsection{Weak strain}
 For any \(\boldsymbol{v} = \{ \boldsymbol{v}^{\operatorname{div}}, \boldsymbol{v}^t \} \in \boldsymbol{V}_h\), 
-we define \(\epsilon^w_h(\boldsymbol{v}) \in \Sigma_h^{-1}\) satisfying \( \epsilon^w_h(\boldsymbol{v})|_K=\epsilon_K^w(\boldsymbol{v})\) and
-{\color{red}{
-\begin{equation}
-\begin{aligned}\label{equ:weakstrain1}
-&(\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K \\
-&:=(\epsilon(\boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}),  \boldsymbol{\sigma})_K 
-+ \langle ( \boldsymbol{v}^{\operatorname{div}} - \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}) \cdot \boldsymbol{n}, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{n} \rangle_{\partial K} \\
-&+ \sum_{i=1}^{d-1} \langle (\boldsymbol{v}^t - \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}})\cdot \boldsymbol{\tau}_i, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{\tau}_i \rangle_{\partial K},
-\end{aligned}
-\end{equation}
-}}
-for all $\boldsymbol{\sigma}\in \Sigma_h^{-1}(K)$.
-
-{\color{gray}{
-Note that since $\boldsymbol{\sigma}$ is discontinuous on $K$, 
-\begin{equation}
+we define \(\varepsilon^w_h(\boldsymbol{v}) \in \Sigma_h^{-1}\) satisfying \( \varepsilon^w_h(\boldsymbol{v})|_K=\varepsilon_K^w(\boldsymbol{v})\) and
+\begin{equation}\label{equ:weakstrain1}
 \begin{aligned}
-&(\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K\\
-&\neq - (\boldsymbol{v}^{\operatorname{div}}, \operatorname{div} \boldsymbol{\sigma})_K + \langle \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{n}, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{n} \rangle_{\partial K} + \sum_{i=1}^{d-1} \langle \boldsymbol{v}^t \cdot \boldsymbol{\tau}_i, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{\tau}_i \rangle_{\partial K} \\
-&\neq - (\boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}, \operatorname{div} \boldsymbol{\sigma})_K + \langle \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{n}, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{n} \rangle_{\partial K} + \sum_{i=1}^{d-1} \langle \boldsymbol{v}^t \cdot \boldsymbol{\tau}_i, (\boldsymbol{\sigma}\boldsymbol{n}) \cdot \boldsymbol{\tau}_i \rangle_{\partial K}\\
+(\varepsilon_K^w(\boldsymbol v),\boldsymbol\sigma)_K
+={}&(\varepsilon(\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}}),\boldsymbol\sigma)_K\\
+&+\langle(\boldsymbol v^{\operatorname{div}}-
+ \boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}})\cdot\boldsymbol n,
+ (\boldsymbol\sigma\boldsymbol n)\cdot\boldsymbol n\rangle_{\partial K}\\
+&+\langle\boldsymbol v^t-\Pi_F\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}},
+ \Pi_F(\boldsymbol\sigma\boldsymbol n)\rangle_{\partial K}
 \end{aligned}
 \end{equation}
-}}
+for all $\boldsymbol\sigma\in\Sigma_h^{-1}(K)$, with $\Pi_F$ applied facewise.
+\AI{Since $\boldsymbol\sigma$ is discontinuous inside $K$, integration by
+parts must include the internal jumps of $\boldsymbol\sigma\boldsymbol n$.
+Dropping these terms does not give an equivalent definition.}
 
-Let
+The normal and tangential boundary jumps are
 \[
-\mathcal{J}_{\partial K}^{\boldsymbol{n}}(\boldsymbol{v}) := ((\boldsymbol{v}^{\operatorname{div}} - \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}) \cdot \boldsymbol{n})\boldsymbol{n}, \quad \mathcal{J}_{\partial K}^{\boldsymbol{\tau}_i}(\boldsymbol{v}) := ((\boldsymbol{v}^t - \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}) \cdot \boldsymbol{\tau}_i)\boldsymbol{\tau}_i.
+\begin{aligned}
+\mathcal J_{\partial K}^{\boldsymbol n}(\boldsymbol v)
+&:=((\boldsymbol v^{\operatorname{div}}-
+\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}})\cdot\boldsymbol n)\boldsymbol n,\\
+\mathcal J_{\partial K}^{\boldsymbol\tau}(\boldsymbol v)
+&:=\boldsymbol v^t-\Pi_F\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}}.
+\end{aligned}
 \]
-
-When the superscript omitted, it indicates the whole jump on the element boundary
-\[
-\mathcal{J}_{\partial K}(\boldsymbol{v}) := \mathcal{J}_{\partial K}^{\boldsymbol{n}}(\boldsymbol{v}) + \mathcal{J}_{\partial K}^{\boldsymbol{\tau}}(\boldsymbol{v}) \quad \text{with} \quad \mathcal{J}_{\partial K}^{\boldsymbol{\tau}}(\boldsymbol{v}) := \sum_{i=1}^{d-1} \mathcal{J}_{\partial K}^{\boldsymbol{\tau}_i}(\boldsymbol{v}).
-\]
+Their sum is $\mathcal J_{\partial K}(\boldsymbol v):=
+\mathcal J_{\partial K}^{\boldsymbol n}(\boldsymbol v)+
+\mathcal J_{\partial K}^{\boldsymbol\tau}(\boldsymbol v)$.
 
  On the face \(F \subset \partial K\), we define \((\boldsymbol{\Pi}_{\partial K}^t \boldsymbol{v})|_F \in \boldsymbol{V}_F\) as
 \[
-\int_F \boldsymbol{\Pi}_{\partial K}^t \boldsymbol{v} \cdot \boldsymbol{q} := \int_F \boldsymbol{v}|_K \cdot \boldsymbol{q} \quad \forall \boldsymbol{q} \in \boldsymbol{V}_F.
+\int_F \boldsymbol{\Pi}_{\partial K}^t \boldsymbol{v} \cdot \boldsymbol{q}\,\mathrm ds = \int_F \boldsymbol{v}|_K \cdot \boldsymbol{q}\,\mathrm ds \quad \forall \boldsymbol{q} \in \boldsymbol{V}_F.
 \]
 Define the notation \(\boldsymbol{\Pi}_{\partial K}\) as
 \[
 \boldsymbol{\Pi}_{\partial K} \boldsymbol{v} := (\boldsymbol{v} \cdot \boldsymbol{n})\boldsymbol{n} + \boldsymbol{\Pi}_{\partial K}^t \boldsymbol{v}.
 \]
 
-With these notations, we can simply write (\ref{equ:weakstrain1}) as
+Since $\boldsymbol\sigma\boldsymbol n|_F\in V_k(F)$, \eqref{equ:weakstrain1} becomes
 \[
-(\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K = (\epsilon(\boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}), \boldsymbol{\sigma})_K + \langle \boldsymbol{\Pi}_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{v}), \boldsymbol{\sigma}\boldsymbol{n} \rangle_{\partial K}.
+(\varepsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K = (\varepsilon(\boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}), \boldsymbol{\sigma})_K + \langle \boldsymbol{\Pi}_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{v}), \boldsymbol{\sigma}\boldsymbol{n} \rangle_{\partial K}.
 \]
 
 
-For any \(\boldsymbol{v}_h \in \boldsymbol{V}_h\), we introduce a mesh dependent \(\boldsymbol{H}^1\) seminorm as
+For $\boldsymbol v_h\in\boldsymbol V_h$, define the mesh-dependent seminorm
 \[
 \|\boldsymbol{v}_h\|_{1,h}^2 := \sum_{K \in \mathcal{K}_h} \|\boldsymbol{v}_h\|_{1,h,K}^2,
 \]
 where the seminorm on each element is defined as
 \[
-\|\boldsymbol{v}_h\|_{1,h,K}^2 := \|\epsilon (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})\|_K^2 + \|h^{-\frac{1}{2}}  \boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}^2.
+\AI{\|\boldsymbol{v}_h\|_{1,h,K}^2 := \|\varepsilon (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})\|_K^2 + h_K^{-1}\|\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}^2.}
 \]
 
 
@@ -366,198 +498,142 @@ The mesh-dependent quantity
 defines a norm on the virtual element space \(\boldsymbol{V}_h\).
 \end{lemma}
 
-\begin{proof}
-It is clear that \(\|\cdot\|_{1,h}\) is a seminorm. We only need to prove positive definiteness. Suppose \(\|\boldsymbol{v}_h\|_{1,h}=0\) for some \(\boldsymbol{v}_h\in\boldsymbol{V}_h\). Then for every \(K\in\mathcal{K}_h\),
+\AI{\begin{proof}
+If $\|\boldsymbol v_h\|_{1,h}=0$, then on each $K$,
+$\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}=\boldsymbol r_K
+\in\mathbf{RM}(K)$, and
 \[
-\epsilon (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})=0
-\quad\text{on} \;K.
+\boldsymbol v_h^{\operatorname{div}}\cdot\boldsymbol n
+=\boldsymbol r_K\cdot\boldsymbol n,
+\qquad
+\boldsymbol v_h^t=\Pi_F\boldsymbol r_K\quad\text{on each }F\subset\partial K.
 \]
-and
-\[
-(\boldsymbol{v}^{\operatorname{div}} - \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}) \cdot \boldsymbol{n}=0,
-\quad\text{and}\quad
-\boldsymbol{v}^t - \boldsymbol{\Pi}_{\partial K}^t \boldsymbol{\Pi}_K^o \boldsymbol{v}^{\operatorname{div}}=\mathbf{0}
-\quad\text{on} \;\partial K.
-\]
-The first identity implies that \(\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}}=\boldsymbol{r}_K\in \mathbf{RM}(K)\) is a rigid motion vector on each element \(K\). The third identity gives, for every face \(F\subset\partial K\) and every tangential vector \(\boldsymbol{\tau}\in\mathscr{T}^F\),
-\[
-\boldsymbol{v}_h^t\cdot\boldsymbol{\tau}=\boldsymbol{r}_K\cdot\boldsymbol{\tau} \quad\text{on }F.
-\]
+The second identity uses $\Pi_F\boldsymbol r_K\in\mathbf{RM}(F)$.
+The normal component of $\boldsymbol v_h^{\operatorname{div}}$ and the
+single-valued tangential field $\boldsymbol v_h^t$ show that neighboring
+rigid motions agree on their common face. A rigid motion that vanishes on
+a face is zero, so connectedness gives one global rigid motion $\boldsymbol r$.
+The boundary conditions give both $\boldsymbol r\cdot\boldsymbol n=0$ and
+$\Pi_F\boldsymbol r=0$ on boundary faces. Hence $\boldsymbol r=0$.
+The normal face moments and all polynomial volume moments of
+$\boldsymbol v_h^{\operatorname{div}}$ now vanish. Unisolvence of
+$\boldsymbol V_K$ gives $\boldsymbol v_h^{\operatorname{div}}=0$,
+and the tangential identity gives $\boldsymbol v_h^t=0$.
+\end{proof}}
 
-Let \(F\) be an interior face shared by two elements \(K\) and \(K'\). From the above relation applied on both sides, we obtain
+\AI{We also need control of the full jump. For
+$\boldsymbol w=\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}$,
+Korn's inequality modulo rigid motions gives a $\boldsymbol r_K\in\mathbf{RM}(K)$
+such that
 \[
-(\boldsymbol{r}_K-\boldsymbol{r}_{K'})\cdot\boldsymbol{\tau}=0,
-\quad\forall \boldsymbol{\tau}\in\mathscr{T}^F.
+h_K^{-1}\|\boldsymbol w-\boldsymbol r_K\|_K
++\|\nabla(\boldsymbol w-\boldsymbol r_K)\|_K
+\lesssim\|\varepsilon(\boldsymbol w)\|_K.
 \]
-Since \(\boldsymbol{v}_h^{\operatorname{div}}\in\boldsymbol{H}(\operatorname{div},\Omega)\), its normal component is continuous across \(F\). This implies
+Since $\boldsymbol\Pi_{\partial K}^t$ reproduces $\Pi_F\boldsymbol r_K$,
+the trace inequality yields
 \[
-(\boldsymbol{r}_K-\boldsymbol{r}_{K'})\cdot\boldsymbol{n}_F=0.
+h_K^{-1/2}\|\Pi_F\boldsymbol w-
+\boldsymbol\Pi_{\partial K}^t\boldsymbol w\|_{\partial K}
+\lesssim\|\varepsilon(\boldsymbol w)\|_K.
 \]
-Thus \(\boldsymbol{r}_K=\boldsymbol{r}_{K'}\) on $F$. By the connectedness of the mesh \(\mathcal{K}_h\), there exists a global rigid motion vector \(\boldsymbol{r}\) such that \(\boldsymbol{r}_K=\boldsymbol{r}\) for all \(K\in\mathcal{K}_h\).
-
-Consequently, \(\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}}=\boldsymbol{r}\) on every \(K\). 
-Since \(\boldsymbol{r}\cdot\boldsymbol{n}|_F\in \mathbb{P}_k(F)\), \(\operatorname{div}\boldsymbol{r}=0\in \mathbb{P}_{k-1}(K)\), and \(\operatorname{curl}\boldsymbol{r}\in \operatorname{curl}\mathbb{P}_k(K;\mathbb{R}^d)\), we have \(\boldsymbol{r}\in \boldsymbol{V}_K\).
-The second identity gives
-\[
-\int_F \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{n} q_k \, \mathrm{d}s = \int_F \boldsymbol{r} \cdot \boldsymbol{n} q_k \, \mathrm{d}s
- \qquad \forall q_k \in \mathbb{P}_k(F), F \subset \partial K.
-\]
-The definition of $\boldsymbol{\Pi}_K^o$
-\[
-\int_K  \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{q} := \int_K \boldsymbol{r} \cdot \boldsymbol{q} \quad \forall \boldsymbol{q} \in \mathbb{P}_k(K;\mathbb{R}^d)
-\]
-yields
-\begin{align*}
-& \int_K \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{q}_{k-2} \, \mathrm{d}\boldsymbol{x} = \int_K \boldsymbol{r} \cdot \boldsymbol{q}_{k-2} \, \mathrm{d}\boldsymbol{x}
-\qquad \forall \boldsymbol{q}_{k-2} \in \mathbf{G}_{k-2}(K), \\
-& \int_K \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} =\int_K \boldsymbol{r} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} 
-\qquad \forall \boldsymbol{q}_k \in \mathbb{P}_k(K;\mathbb{R}^d) \backslash \mathbf{G}_k(K).
-\end{align*}
-Using the unisolvence of the degrees of freedom of \(\boldsymbol{V}_K\), we deduce that \(\boldsymbol{v}_h^{\operatorname{div}}=\boldsymbol{r}\) on \(\Omega\).
- The boundary condition \(\boldsymbol{v}_h^{\operatorname{div}}\cdot\boldsymbol{n}=0\) on \(\partial\Omega\) then yields \(\boldsymbol{r}\cdot\boldsymbol{n}=0\) for all boundary normals \(\boldsymbol{n}\). Since the boundary normals span \(\mathbb{R}^d\), we get \(\boldsymbol{r}=\boldsymbol{0}\). Therefore \(\boldsymbol{v}_h^{\operatorname{div}}=\boldsymbol{0}\) and, from \(\boldsymbol{v}_h^t\cdot\boldsymbol{\tau}=\boldsymbol{r}\cdot\boldsymbol{\tau}=0\) for all tangential \(\boldsymbol{\tau}\), we also have \(\boldsymbol{v}_h^t=\boldsymbol{0}\). Hence \(\boldsymbol{v}_h=\boldsymbol{0}\), which proves that \(\|\cdot\|_{1,h}\) is a norm on \(\boldsymbol{V}_h\).
-\end{proof}
-
-It follows from the Korn's inequality that
-\[
-\|\boldsymbol{v}_h\|_{1,h,K}^2 \eqsim \|\nabla (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})\|_K^2 + \|h^{-\frac{1}{2}}  \boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}^2.
-\]
+The normal part of the jump is unchanged by $\boldsymbol\Pi_{\partial K}$.
+The unprojected tangential part has the same norm as the difference above. Thus
+\begin{equation}\label{eq:fulljump}
+h_K^{-1/2}\|\mathcal J_{\partial K}(\boldsymbol v_h)\|_{\partial K}
+\lesssim\|\boldsymbol v_h\|_{1,h,K}.
+\end{equation}
+The jump of $\boldsymbol w$ across a primal face is the difference of its
+two full boundary jumps; on a boundary face, $\boldsymbol w$ is minus its
+full boundary jump. Applying the broken Korn inequality \cite{Brenner2004}
+on the simplicial refinement therefore gives the global equivalence
+\begin{equation}\label{eq:globalKorn}
+\|\boldsymbol v_h\|_{1,h}^2\simeq
+\sum_{K\in\mathcal K_h}\left(
+\|\nabla\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}\|_K^2
++h_K^{-1}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol v_h)\|_{\partial K}^2
+\right).
+\end{equation}
+This equivalence is global; it does not hold on an individual element.}
 
 \begin{lemma} \label{lem:discinf-sup}
 We have the discrete inf-sup condition
 \begin{equation}\label{eq:discinfsup}
-\|\boldsymbol{v}\|_{1,h}\lesssim \sup_{\boldsymbol{\sigma}_h\in\Sigma_h^{-1}}
-\frac{\sum_{K\in\mathcal{K}_h}(\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K}{\|\boldsymbol{\sigma}\|_{0,h}}\quad\forall~\boldsymbol{v}\in V_h.
+\|\boldsymbol{v}\|_{1,h}\lesssim \sup_{0\ne\boldsymbol{\sigma}_h\in\Sigma_h^{-1}}
+\frac{\sum_{K\in\mathcal{K}_h}(\varepsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma}_h)_K}{\|\boldsymbol{\sigma}_h\|_{0,h}}\quad\forall~\boldsymbol{v}\in\boldsymbol V_h.
 \end{equation}
 \end{lemma}
-\begin{proof}
-Let \(\boldsymbol{v}\in \boldsymbol{V}_h\) be fixed. We construct a tensor \(\boldsymbol{\sigma}\in\Sigma_h^{-1}\) satisfying the following moment conditions:
-\begin{enumerate}
-\item[(i)] For every \(K\in\mathcal{K}_h\) and every \(\boldsymbol{\tau}\in\mathbb{P}_{k-1}(K;\mathbb{S})\),
+\AI{\begin{proof}
+Here $\|\boldsymbol\sigma\|_{0,h}^2:=\sum_K\|\boldsymbol\sigma\|_K^2$.
+For fixed $\boldsymbol v\in\boldsymbol V_h$, use Lemma~\ref{lemma_DOF}
+to choose $\boldsymbol\sigma|_K\in\Sigma_h^{-1}(K)$ with
 \[
-(\boldsymbol{\sigma}, \boldsymbol{\tau})_K
-= (\boldsymbol{\varepsilon}(\boldsymbol{\Pi}_K^o \boldsymbol{v}), \boldsymbol{\tau})_K.
-\]
-\item[(ii)] For every face \(F\in\mathcal{F}_h\) and every \(\boldsymbol{q}\in V_k(F)\),
-\[
-\langle \boldsymbol{\sigma}\boldsymbol{n}, \boldsymbol{q} \rangle_F
-= \langle h_F^{-1} \boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}), \boldsymbol{q} \rangle_F.
-\]
-\end{enumerate}
-The DoFs \eqref{SigmaKDoFs2} vanish.
-By the unisolvence of the degrees of freedom for \(\Sigma_h^{-1}(K)\) (Lemma~\ref{lemma_DOF}), such a \(\boldsymbol{\sigma}\) exists and is unique.
-
-Using the definition of \(\epsilon_K^w(\boldsymbol{v})\) and the above moment conditions, we compute
-\[
-(\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K
-= (\boldsymbol{\varepsilon}(\boldsymbol{\Pi}_K^o \boldsymbol{v}), \boldsymbol{\sigma})_K
-+ \langle \boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}), \boldsymbol{\sigma}\boldsymbol{n} \rangle_{\partial K}.
-\]
-By condition (i), the first term equals \(\|\boldsymbol{\varepsilon}(\boldsymbol{\Pi}_K^o \boldsymbol{v})\|_K^2\). By condition (ii), the boundary term equals
-\[
-\sum_{F\subset\partial K} h_F^{-1} \|\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v})\|_F^2.
-\]
-Summing over all \(K\in\mathcal{K}_h\), we obtain
-\[
-\sum_{K\in\mathcal{K}_h} (\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma})_K
-= \sum_{K\in\mathcal{K}_h} \|\boldsymbol{\varepsilon}(\boldsymbol{\Pi}_K^o \boldsymbol{v})\|_K^2
-+ \sum_{K\in\mathcal{K}_h} \sum_{F\subset\partial K} h_F^{-1} \|\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v})\|_F^2
-= \|\boldsymbol{v}\|_{1,h}^2.
-\]
-On the other hand, a standard scaling argument together with the definition of the degrees of freedom yields
-\[
-\|\boldsymbol{\sigma}\|_{0,h} \lesssim \|\boldsymbol{v}\|_{1,h}.
-\]
-Therefore,
-\begin{equation*}
 \begin{aligned}
-&\|\boldsymbol{v}\|_{1,h}^2
-\lesssim  \|\boldsymbol{\sigma}\|_{0,h}
-\sup_{\boldsymbol{\sigma}_h\in\Sigma_h^{-1}}
-\frac{\sum_{K\in\mathcal{K}_h} (\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma}_h)_K}{\|\boldsymbol{\sigma}_h\|_{0,h}}\\
-&\lesssim \|\boldsymbol{v}\|_{1,h}
-\sup_{\boldsymbol{\sigma}_h\in\Sigma_h^{-1}}
-\frac{\sum_{K\in\mathcal{K}_h} (\epsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma}_h)_K}{\|\boldsymbol{\sigma}_h\|_{0,h}}.
+(\boldsymbol\sigma,\boldsymbol\tau)_K
+&=(\varepsilon(\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}}),\boldsymbol\tau)_K
+&&\forall\boldsymbol\tau\in\mathbb P_{k-1}(K;\mathbb S),\\
+\langle\boldsymbol\sigma\boldsymbol n,\boldsymbol q\rangle_F
+&=\langle h_K^{-1}\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol v),\boldsymbol q\rangle_F
+&&\forall\boldsymbol q\in V_k(F),\ F\subset\partial K,
 \end{aligned}
-\end{equation*}
-Dividing by \(\|\boldsymbol{v}\|_{1,h}\) (if nonzero) gives the desired discrete inf-sup condition \eqref{eq:discinfsup}. The case \(\boldsymbol{v}=\boldsymbol{0}\) is trivial.
-\end{proof}
-
-
-As a corollary, we have the following lemma:
-
-\begin{lemma}
-For any \(\boldsymbol{v}_h = \{\boldsymbol{v}_h^{\operatorname{div}}, \boldsymbol{v}_h^t\} \in \boldsymbol{V}_h\), there holds that
+\]
+and with the moments \eqref{SigmaKDoFs2} set to zero.
+Face moments are prescribed separately on each element side, using its
+outward normal. Testing with the polynomial strain and projected jump gives
 \[
-\|\boldsymbol{v}_h\|_{1,h}^2 \lesssim \|\epsilon_h^w(\boldsymbol{v}_h)\|^2.
+\sum_K(\varepsilon_K^w(\boldsymbol v),\boldsymbol\sigma)_K
+=\|\boldsymbol v\|_{1,h}^2.
+\]
+On the rescaled element, unisolvence, mesh regularity, and the uniform
+basis bound in Assumption~\ref{meshassumption} give
+\[
+\begin{aligned}
+\|\boldsymbol\sigma\|_K
+&\lesssim\|\varepsilon(\boldsymbol\Pi_K^o\boldsymbol v^{\operatorname{div}})\|_K
++h_K^{-1/2}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol v)\|_{\partial K},\\
+\|\boldsymbol\sigma\|_{0,h}&\lesssim\|\boldsymbol v\|_{1,h}.
+\end{aligned}
+\]
+Substitute this tensor into the supremum in \eqref{eq:discinfsup}.
+The result follows for $\boldsymbol v\ne0$; the zero case is immediate.
+\end{proof}}
+
+
+
+\begin{lemma}\label{lem:coercive-strain}
+For every $\boldsymbol v_h\in\boldsymbol V_h$,
+\[
+\|\boldsymbol v_h\|_{1,h}\lesssim\|\varepsilon_h^w(\boldsymbol v_h)\|.
 \]
 \end{lemma}
 \begin{proof}
-By the discrete inf-sup condition established in Lemma~\ref{lem:discinf-sup}, we have
-\[
-\|\boldsymbol{v}_h\|_{1,h}
-\lesssim
-\sup_{\boldsymbol{\sigma}\in\Sigma_h^{-1}}
-\frac{\sum_{K\in\mathcal{K}_h}(\epsilon_K^w(\boldsymbol{v}_h), \boldsymbol{\sigma})_K}{\|\boldsymbol{\sigma}\|_{0,h}}.
-\]
-For any \(\boldsymbol{\sigma}\in\Sigma_h^{-1}\), the Cauchy--Schwarz inequality gives
-\begin{equation*}
-\begin{aligned}
-&\sum_{K\in\mathcal{K}_h}(\epsilon_K^w(\boldsymbol{v}_h), \boldsymbol{\sigma})_K
-\le
-\sum_{K\in\mathcal{K}_h}\|\epsilon_K^w(\boldsymbol{v}_h)\|_K \|\boldsymbol{\sigma}\|_K\\
-&\le
-\left(\sum_{K\in\mathcal{K}_h}\|\epsilon_K^w(\boldsymbol{v}_h)\|_K^2\right)^{1/2}
-\left(\sum_{K\in\mathcal{K}_h}\|\boldsymbol{\sigma}\|_K^2\right)^{1/2}.
-\end{aligned}
-\end{equation*}
-Since
-\[
-\|\epsilon_h^w(\boldsymbol{v}_h)\|^2 = \sum_{K\in\mathcal{K}_h}\|\epsilon_K^w(\boldsymbol{v}_h)\|_K^2,
-\qquad
-\|\boldsymbol{\sigma}\|_{0,h}^2 = \sum_{K\in\mathcal{K}_h}\|\boldsymbol{\sigma}\|_K^2,
-\]
-we obtain
-\[
-\sum_{K\in\mathcal{K}_h}(\epsilon_K^w(\boldsymbol{v}_h), \boldsymbol{\sigma})_K
-\le
-\|\epsilon_h^w(\boldsymbol{v}_h)\| \|\boldsymbol{\sigma}\|_{0,h}.
-\]
-Dividing by \(\|\boldsymbol{\sigma}\|_{0,h}\) and taking the supremum over \(\boldsymbol{\sigma}\in\Sigma_h^{-1}\), it follows that
-\[
-\sup_{\boldsymbol{\sigma}\in\Sigma_h^{-1}}
-\frac{\sum_{K\in\mathcal{K}_h}(\epsilon_K^w(\boldsymbol{v}_h), \boldsymbol{\sigma})_K}{\|\boldsymbol{\sigma}\|_{0,h}}
-\le
-\|\epsilon_h^w(\boldsymbol{v}_h)\|.
-\]
-Combining this with the discrete inf-sup condition yields
-\[
-\|\boldsymbol{v}_h\|_{1,h}
-\lesssim
-\|\epsilon_h^w(\boldsymbol{v}_h)\|.
-\]
-Squaring both sides gives the desired discrete Korn inequality:
-\[
-\|\boldsymbol{v}_h\|_{1,h}^2 \lesssim \|\epsilon_h^w(\boldsymbol{v}_h)\|^2.
-\]
-This completes the proof.
+Apply Lemma~\ref{lem:discinf-sup} and the Cauchy--Schwarz inequality.
 \end{proof}
 
-\section{Numerical scheme}
-Let \(S_h \subset L^2_0(\Omega)\) be a discontinuous piecewise \(P_{k-1}\) element space. Then, the corresponding discrete variational formulation for problem (1) is to seek \(\boldsymbol{u}_h = \{\boldsymbol{u}_h^{\operatorname{div}}, \boldsymbol{u}_h^t\} \in \boldsymbol{V}_h\) and \(p_h \in S_h\) satisfying
-\begin{equation}\tag{14}
-\left\{
-\begin{aligned}
-a_h(\boldsymbol{u}_h, \boldsymbol{v}_h) + b(\boldsymbol{v}_h, p_h) &= (\boldsymbol{f}, \boldsymbol{\Pi}_h^o \boldsymbol{v}_h^{\operatorname{div}}) && \forall \boldsymbol{v}_h \in \boldsymbol{V}_h, \\
-b(\boldsymbol{u}_h, q_h) &= 0 && \forall q_h \in S_h,
-\end{aligned}
-\right.
+\section{Numerical scheme}\label{sec:scheme}
+Let
+\[
+S_h:=\{q_h\in L_0^2(\Omega):q_h|_K\in\mathbb P_{k-1}(K)
+\text{ for all }K\in\mathcal K_h\}.
+\]
+The discrete formulation of \eqref{eq:stokes} seeks
+$\boldsymbol u_h=\{\boldsymbol u_h^{\operatorname{div}},\boldsymbol u_h^t\}
+\in\boldsymbol V_h$ and $p_h\in S_h$ such that
+\begin{equation}\label{eq:scheme}
+\left\{\begin{aligned}
+a_h(\boldsymbol u_h,\boldsymbol v_h)+b(\boldsymbol v_h,p_h)
+&=(\boldsymbol f,\boldsymbol\Pi_h^o\boldsymbol v_h^{\operatorname{div}})
+&&\forall\boldsymbol v_h\in\boldsymbol V_h,\\
+b(\boldsymbol u_h,q_h)&=0&&\forall q_h\in S_h,
+\end{aligned}\right.
 \end{equation}
 where
-\begin{align*}
-a_h(\boldsymbol{u}_h, \boldsymbol{v}_h) &:= (\epsilon_h^w(\boldsymbol{u}_h), \epsilon_h^w(\boldsymbol{v}_h)), \\
-b(\boldsymbol{v}_h, p_h) &:= -(\operatorname{div} \boldsymbol{v}_h^{\operatorname{div}}, p_h).
-\end{align*}
-
+\[
+a_h(\boldsymbol u_h,\boldsymbol v_h):=
+(\varepsilon_h^w(\boldsymbol u_h),\varepsilon_h^w(\boldsymbol v_h)),
+\qquad
+b(\boldsymbol v_h,p_h):=-(\operatorname{div}\boldsymbol v_h^{\operatorname{div}},p_h).
+\]
 
 \begin{lemma}
 For every
@@ -566,93 +642,31 @@ For every
 \)
 there holds
 \[
-\|\epsilon_h^w(\boldsymbol{v}_h)\|^2
+\|\varepsilon_h^w(\boldsymbol{v}_h)\|^2
 \lesssim
 \|\boldsymbol{v}_h\|_{1,h}^2.
 \]
 \end{lemma}
 
 \begin{proof}
-Fix \(K\in\mathcal{K}_h\). From the definition of the weak strain, for every
-\(\boldsymbol{\sigma}\in\Sigma_h^{-1}(K)\),
-\[
-(\epsilon_K^w(\boldsymbol{v}_h),\boldsymbol{\sigma})_K
-=
-(\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}}),\boldsymbol{\sigma})_K
-+
-\langle
-\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h),
-\boldsymbol{\sigma}\boldsymbol{n}
-\rangle_{\partial K}.
-\]
-Taking \(\boldsymbol{\sigma}=\epsilon_K^w(\boldsymbol{v}_h)\), we obtain
-\[
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K^2
-=
-(\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}}),\epsilon_K^w(\boldsymbol{v}_h))_K
-+
-\langle
-\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h),
-\epsilon_K^w(\boldsymbol{v}_h)\boldsymbol{n}
-\rangle_{\partial K}.
-\]
-By the Cauchy--Schwarz inequality,
+Set $\boldsymbol\sigma=\varepsilon_K^w(\boldsymbol v_h)$ in
+\eqref{equ:weakstrain1}. The Cauchy--Schwarz and polynomial trace inequalities give
 \[
 \begin{aligned}
-&
-\left|
-(\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}}),
-\epsilon_K^w(\boldsymbol{v}_h))_K
-\right| \\
-&\le
-\|\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}})\|_K
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K
-\le
-\|\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}})\|_K
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K.
+\|\varepsilon_K^w(\boldsymbol v_h)\|_K^2
+\lesssim\Bigl(&\|\varepsilon(\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}})\|_K\\
+&+h_K^{-1/2}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol v_h)\|_{\partial K}\Bigr)
+\|\varepsilon_K^w(\boldsymbol v_h)\|_K.
 \end{aligned}
 \]
-For the boundary term, by the Cauchy--Schwarz inequality and the trace inequality for the finite-dimensional space \(\Sigma_h^{-1}(K)\), there exists a constant \(C_T>0\), depending only on \(k\) and the shape regularity of \(\mathcal{K}_h\), such that
-\[
-\left|
-\langle
-\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h),
-\epsilon_K^w(\boldsymbol{v}_h)\boldsymbol{n}
-\rangle_{\partial K}
-\right|
-\le
-C_T
-\|h^{-1/2}\Pi_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K.
-\]
-Combining the above estimates gives
-\[
-\begin{aligned}
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K^2
-&\le
-\|\epsilon(\Pi_K^o\boldsymbol{v}_h^{\operatorname{div}})\|_K
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K \\
-&\quad
-+
-C_T
-\|h^{-1/2}\Pi_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K.
-\end{aligned}
-\]
-If \(\|\epsilon_K^w(\boldsymbol{v}_h)\|_K\neq 0\), dividing by \(\|\epsilon_K^w(\boldsymbol{v}_h)\|_K\) yields
-\[
-\|\epsilon_K^w(\boldsymbol{v}_h)\|_K^2
-\lesssim
-\|\boldsymbol{v}_h\|_{1,h,K}^2.
-\]
-The case \(\|\epsilon_K^w(\boldsymbol{v}_h)\|_K=0\) is trivial. 
-This completes the proof.
+Divide by the strain norm when it is nonzero, square, and sum over $K$.
 \end{proof}
 
+
 \begin{lemma}\label{lem:10}
-For all \(\boldsymbol{u}_h, \boldsymbol{v}_h \in \boldsymbol{V}_h\), it holds that
+For $\boldsymbol u_h,\boldsymbol v_h\in\boldsymbol V_h$,
 \begin{align*}
-a_h(\boldsymbol{u}_h, \boldsymbol{v}_h) &\lesssim \|\boldsymbol{u}_h\|_{1,h} \|\boldsymbol{v}_h\|_{1,h}, \\
+|a_h(\boldsymbol{u}_h, \boldsymbol{v}_h)| &\lesssim \|\boldsymbol{u}_h\|_{1,h} \|\boldsymbol{v}_h\|_{1,h}, \\
 a_h(\boldsymbol{u}_h, \boldsymbol{u}_h) &\gtrsim  \|\boldsymbol{u}_h\|_{1,h}^2.
 \end{align*}
 \end{lemma}
@@ -661,185 +675,290 @@ a_h(\boldsymbol{u}_h, \boldsymbol{u}_h) &\gtrsim  \|\boldsymbol{u}_h\|_{1,h}^2.
 
 
 \begin{lemma}\label{lem:11}
-For any \(\boldsymbol{v}_h = \{\boldsymbol{v}_h^{\operatorname{div}}, \boldsymbol{v}_h^t\} \in \boldsymbol{V}_h\) and \(q_h \in S_h\), it is true that
+For $\boldsymbol v_h\in\boldsymbol V_h$ and $q_h\in S_h$,
 \[
-b(\boldsymbol{v}_h, q_h) \lesssim \|\boldsymbol{v}_h\|_{1,h} \|q_h\|.
+|b(\boldsymbol v_h,q_h)|\lesssim\|\boldsymbol v_h\|_{1,h}\|q_h\|.
 \]
 \end{lemma}
+\AI{\begin{proof}
+Write $\boldsymbol w=\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}$.
+For $q\in\mathbb P_{k-1}(K)$, the volume projection and integration by parts give
+\[
+(\operatorname{div}\boldsymbol v_h^{\operatorname{div}},q)_K
+=(\operatorname{div}\boldsymbol w,q)_K
++\langle\mathcal J_{\partial K}^{\boldsymbol n}(\boldsymbol v_h)\cdot\boldsymbol n,q\rangle_{\partial K}.
+\]
+Use $q=\operatorname{div}\boldsymbol v_h^{\operatorname{div}}$, the polynomial
+trace inequality, and $|\operatorname{div}\boldsymbol w|\leq
+\sqrt d\,|\varepsilon(\boldsymbol w)|$. This gives
+$\|\operatorname{div}\boldsymbol v_h^{\operatorname{div}}\|_K
+\lesssim\|\boldsymbol v_h\|_{1,h,K}$.
+Sum over $K$ and apply the Cauchy--Schwarz inequality.
+\end{proof}}
 
 \begin{lemma}\label{lem:12}
-For any \(p_h \in S_h\), there exists a \(\boldsymbol{v}_h = \{\boldsymbol{v}_h^{\operatorname{div}}, \boldsymbol{v}_h^t\} \in \boldsymbol{V}_h\) such that
+For every $p_h\in S_h$, there is a $\boldsymbol v_h\in\boldsymbol V_h$ with
 \[
-\operatorname{div} \boldsymbol{v}_h^{\operatorname{div}} = p_h \quad \text{and} \quad \|\boldsymbol{v}_h\|_{1,h} \lesssim \|p_h\|.
+\operatorname{div}\boldsymbol v_h^{\operatorname{div}}=p_h,
+\qquad\|\boldsymbol v_h\|_{1,h}\lesssim\|p_h\|.
 \]
 \end{lemma}
 
-\subsection{The interpolation}
-For any \(\boldsymbol{v} \in \boldsymbol{H}^1(K)\), \(\boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{v} \in \boldsymbol{V}_K\) is defined by the degree of freedoms, i.e.,
-\begin{align*}
-\int_F \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{v} \cdot \boldsymbol{n} \, q_k &= \int_F \boldsymbol{v} \cdot \boldsymbol{n} \, q_k && \forall q_k \in P_k(F), F \subset \partial K, \\
-\int_K \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{v} \cdot \boldsymbol{q}_{k-2} &= \int_K \boldsymbol{v} \cdot \boldsymbol{q}_{k-2} && \forall \boldsymbol{q}_{k-2} \in \boldsymbol{G}_{k-2}(K), \\
-\int_K \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{v} \cdot \boldsymbol{q}_k &= \int_K \boldsymbol{v} \cdot \boldsymbol{q}_k && \forall \boldsymbol{q}_k \in \boldsymbol{P}_k(K) \setminus \boldsymbol{G}_k(K).
-\end{align*}
+\subsection{Interpolation}
+For $\boldsymbol v\in\boldsymbol H^1(K)$, define
+$\boldsymbol I_K^{\operatorname{div}}\boldsymbol v\in\boldsymbol V_K$
+by matching its Type I--III DoFs with those of $\boldsymbol v$.
+\AI{Integration by parts with $q\in\mathbb P_{k-1}(K)$ gives the commuting identity
+\begin{equation}\label{eq:commuting}
+\operatorname{div}\boldsymbol I_K^{\operatorname{div}}\boldsymbol v
+=Q_h(\operatorname{div}\boldsymbol v)|_K,
+\end{equation}
+where $Q_h$ is the elementwise $L^2$ projection onto $\mathbb P_{k-1}$;
+for mean-zero functions its range is $S_h$.
+The interpolant reproduces $\mathbb P_k(K;\mathbb R^d)$.
+Scaled stability of its DoFs gives
+\begin{equation}\label{eq:Istability}
+\|\boldsymbol I_K^{\operatorname{div}}\boldsymbol v\|_K
+\lesssim\|\boldsymbol v\|_K+h_K|\boldsymbol v|_{1,K}.
+\end{equation}
+Indeed, the scaled face moments are bounded by
+$h_K^{1/2}\|\boldsymbol v\cdot\boldsymbol n\|_{\partial K}$,
+and the normalized volume moments by $\|\boldsymbol v\|_K$.
+The trace inequality and uniform norm equivalence for the unisolvent DoFs
+prove \eqref{eq:Istability}. These arguments are the usual face-VEM
+interpolation estimates; see \cite{BBMR2016,BMM2022} for the underlying
+spaces and related stability results. Subtracting a degree-$k$ polynomial
+approximant in \eqref{eq:Istability} yields
+\begin{equation}\label{eq:Iapprox}
+\|\boldsymbol v-\boldsymbol I_K^{\operatorname{div}}\boldsymbol v\|_K
+\lesssim h_K^{k+1}|\boldsymbol v|_{k+1,K}.
+\end{equation}}
+
+\AI{\begin{proof}[Proof of Lemma~\ref{lem:12}]
+The continuous divergence right inverse \cite{BBF2013} provides
+$\boldsymbol v\in\boldsymbol H_0^1(\Omega)$ with
+$\operatorname{div}\boldsymbol v=p_h$ and
+$|\boldsymbol v|_1\lesssim\|p_h\|$.
+Set $\boldsymbol v_h^{\operatorname{div}}|_K=
+\boldsymbol I_K^{\operatorname{div}}\boldsymbol v$ and
+$\boldsymbol v_h^t|_F=\boldsymbol\Pi_{\partial K}^t\boldsymbol v$.
+The traces are single-valued and zero on the boundary, and
+\eqref{eq:commuting} gives the required divergence.
+Let $\boldsymbol w=\boldsymbol\Pi_K^o\boldsymbol I_K^{\operatorname{div}}\boldsymbol v$.
+Subtracting the mean of $\boldsymbol v$ in \eqref{eq:Istability}, and using
+polynomial inverse estimates, gives
+\[
+\|\nabla\boldsymbol w\|_K\lesssim|\boldsymbol v|_{1,K},
+\qquad
+\|\boldsymbol v-\boldsymbol w\|_K\lesssim h_K|\boldsymbol v|_{1,K}.
+\]
+The normal interpolant trace is the face $L^2$ projection of
+$\boldsymbol v\cdot\boldsymbol n$. Thus both parts of the projected boundary
+jump are bounded by $\|\boldsymbol v-\boldsymbol w\|_{\partial K}$.
+The trace inequality now gives
+$\|\boldsymbol v_h\|_{1,h,K}\lesssim|\boldsymbol v|_{1,K}$.
+Sum over $K$ to conclude.
+\end{proof}
+Since $b$ has a minus sign, use the negative of this lifting to obtain
+\begin{equation}\label{eq:pressure-infsup}
+\|q_h\|\lesssim\sup_{0\ne\boldsymbol v_h\in\boldsymbol V_h}
+\frac{|b(\boldsymbol v_h,q_h)|}{\|\boldsymbol v_h\|_{1,h}}
+\qquad(q_h\in S_h).
+\end{equation}
+Together with Lemmas~\ref{lem:10} and \ref{lem:11}, this proves that
+\eqref{eq:scheme} has a unique solution \cite{BBF2013}.
+Also, $\operatorname{div}\boldsymbol u_h^{\operatorname{div}}\in S_h$;
+testing the second equation with this divergence shows that it vanishes
+on every element.}
 
 \subsection{Error equations}
-In this section, we assume that \((\boldsymbol{u}, p) \in (\boldsymbol{H}^{k+1} \cap \boldsymbol{H}_0^1) \times (H^k \cap L_0^2)\) is the weak solution of the Stokes problem, and define the interpolation \(\boldsymbol{u}_I = \{\boldsymbol{u}_I^{\mathrm{div}}, \boldsymbol{u}_I^t\}\) as \(\boldsymbol{u}_I^{\mathrm{div}}|_E = \boldsymbol{I}_E^{\mathrm{div}} \boldsymbol{u}, \boldsymbol{u}_I^t|_{\partial E} = \boldsymbol{\Pi}_{\partial E}^t \boldsymbol{u}, p_I = Q_h p\), where \(Q_h\) denotes the \(L^2\) projection to the space \(S_h\). We shall estimate \(\boldsymbol{u}_h - \boldsymbol{u}_I\) and \(p_h - p_I\).
-
-Let \(\mathcal{Q}_h: L^2(\Omega;\mathbb S)\to \Sigma_h^{-1}\) denote the \(L^2\)-projection onto \(\Sigma_h^{-1}\).
-For any \(\boldsymbol{v}_h \in \boldsymbol{V}_h\), we have
-\begin{equation}\label{eq:erroreq}
+Assume $(\boldsymbol u,p)\in
+(\boldsymbol H^{k+1}(\Omega)\cap\boldsymbol H_0^1(\Omega))\times
+(H^k(\Omega)\cap L_0^2(\Omega))$ solves \eqref{eq:stokes}.
+Set
+\[
+\boldsymbol u_I^{\operatorname{div}}|_K=\boldsymbol I_K^{\operatorname{div}}\boldsymbol u,
+\qquad \boldsymbol u_I^t|_F=\boldsymbol\Pi_{\partial K}^t\boldsymbol u,
+\qquad p_I=Q_hp.
+\]
+\AI{For later use, \eqref{eq:Iapprox}, polynomial approximation, and inverse
+estimates imply
+\begin{equation}\label{eq:projected-approx}
 \begin{aligned}
-& a_h(\boldsymbol{u}_h - \boldsymbol{u}_I, \boldsymbol{v}_h) + b(\boldsymbol{v}_h, p_h - p_I) \\
-&= (\boldsymbol{f}, \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}) 
-  - (\epsilon_h^w(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)) 
-  + (\nabla \cdot \boldsymbol{v}_h^{\operatorname{div}}, Q_h p) \\
-&= (-\nabla \cdot \epsilon(\boldsymbol{u}), \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}})_K 
-  + (\nabla p, \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}})_K \\
-&\quad - (\epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}), \epsilon_h^w(\boldsymbol{v}_h))_K 
-  - \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)\boldsymbol{n} \rangle_{\partial K} \\
-&\quad + (\nabla \cdot \boldsymbol{v}_h^{\operatorname{div}}, Q_h p) \\
-&= (\epsilon(\boldsymbol{u}), \epsilon(\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}))_K 
-  - \langle \epsilon(\boldsymbol{u})\boldsymbol{n}, \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}} \rangle_{\partial K} \\
-&\quad + (\nabla p, \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}})_K 
-  - (\boldsymbol{v}_h^{\operatorname{div}}, \nabla Q_h p) 
-  + \langle Q_h p, \boldsymbol{v}_h^{\operatorname{div}} \cdot \boldsymbol{n} \rangle_{\partial K} \\
-&\quad - (\mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}), \epsilon(\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}})) 
-  - \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{v}_h), \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u})\boldsymbol{n} \rangle_{\partial K} \\
-&\quad - \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)\boldsymbol{n} \rangle_{\partial K} \\
-&= (\epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}), \epsilon(\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}))_K \\
-&\quad + (\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}, \nabla p - \nabla Q_h p) \\
-&\quad + \langle \epsilon(\boldsymbol{u})\boldsymbol{n}, \mathcal{J}_{\partial K}(\boldsymbol{v}_h) \rangle_{\partial K} 
-  + \langle Q_h p - p, \boldsymbol{v}_h^{\operatorname{div}} \cdot \boldsymbol{n} \rangle_{\partial K} \\
-&\quad - \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{v}_h), \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u})\boldsymbol{n} \rangle_{\partial K} \\
-&\quad - \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)\boldsymbol{n} \rangle_{\partial K}\\
-&= \bigl( \boldsymbol{\varepsilon}(\boldsymbol{u}) - \mathcal{Q}_h \boldsymbol{\varepsilon}(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}), \boldsymbol{\varepsilon}(\Pi_K^o \boldsymbol{v}^{\operatorname{div}}) \bigr)_K \\
-&\quad + \bigl\langle \mathcal{J}_{\partial K}(\boldsymbol{v}), \boldsymbol{\varepsilon}(\boldsymbol{u})\boldsymbol{n} - \mathcal{Q}_h \boldsymbol{\varepsilon}(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u})\boldsymbol{n} \bigr\rangle_{\partial K} \\
-&\quad - \bigl( \nabla \cdot \Pi_K^o \boldsymbol{v}^{\operatorname{div}}, p - Q_h p \bigr) 
-      + \bigl\langle Q_h p - p, \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{n} - \Pi_K^o \boldsymbol{v}^{\operatorname{div}} \cdot \boldsymbol{n} \bigr\rangle_{\partial K} \\
-&\quad - \bigl\langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v})\boldsymbol{n} \bigr\rangle_{\partial K}
+&\|\boldsymbol u-\boldsymbol\Pi_K^o\boldsymbol I_K^{\operatorname{div}}\boldsymbol u\|_K
++h_K|\boldsymbol u-\boldsymbol\Pi_K^o\boldsymbol I_K^{\operatorname{div}}\boldsymbol u|_{1,K}\\
+&\quad+h_K^{1/2}\|\boldsymbol u-\boldsymbol\Pi_K^o\boldsymbol I_K^{\operatorname{div}}\boldsymbol u\|_{\partial K}
+\lesssim h_K^{k+1}|\boldsymbol u|_{k+1,K}.
 \end{aligned}
 \end{equation}
-Moreover, from the discrete divergence equation, for all \(q \in S_h\),
-\begin{equation}\label{eq:divergenceerror}
-b(\boldsymbol{u}_h - \boldsymbol{u}_I, q) = 0.
+To see this, subtract a degree-$k$ polynomial approximant and bound the
+remaining polynomial by its $L^2$ norm using inverse and trace estimates.
+The same argument applied to the strain gives
+\begin{equation}\label{eq:strain-approx}
+\begin{aligned}
+&\|\varepsilon(\boldsymbol u)-\varepsilon(\boldsymbol\Pi_K^o
+\boldsymbol I_K^{\operatorname{div}}\boldsymbol u)\|_K\\
+&\quad+h_K^{1/2}\|\varepsilon(\boldsymbol u)-\varepsilon(\boldsymbol\Pi_K^o
+\boldsymbol I_K^{\operatorname{div}}\boldsymbol u)\|_{\partial K}
+\lesssim h_K^k|\boldsymbol u|_{k+1,K}.
+\end{aligned}
 \end{equation}
+Since the normal interpolant trace and the tangential interpolant are face
+projections, \eqref{eq:projected-approx} also gives
+\begin{equation}\label{eq:interpolant-jump}
+h_K^{-1/2}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol u_I)\|_{\partial K}
+\lesssim h_K^k|\boldsymbol u|_{k+1,K}.
+\end{equation}}
 
-We now estimate the terms on the right-hand side of \eqref{eq:erroreq}.
-First,
-\begin{align*}
-& (\epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}), \epsilon(\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}})) \\
-&\le \| \epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}) \| 
-   \| \epsilon(\Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}) \| \\
-&\le \left( \| \epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\boldsymbol{u}) \| 
-   + \| \mathcal{Q}_h \epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}) \| \right) 
-   \| \boldsymbol{v}_h \|_{1,h} \\
-&\le \left( C h^k \|\boldsymbol{u}\|_{k+1} 
-   + \| \epsilon(\boldsymbol{u} - \Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}) \| \right) 
-   \| \boldsymbol{v}_h \|_{1,h} \\
-&\le \left( C h^k \|\boldsymbol{u}\|_{k+1} 
-   + \| \epsilon(\Pi_K^o (\boldsymbol{u} - \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u})) \| \right) 
-   \| \boldsymbol{v}_h \|_{1,h} \\
-&\le C h^k \|\boldsymbol{u}\|_{k+1} \| \boldsymbol{v}_h \|_{1,h}.
-\end{align*}
-Second,
-\begin{align*}
-& \langle \mathcal{J}_{\partial K}(\boldsymbol{v}_h), \epsilon(\boldsymbol{u})\boldsymbol{n} - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u})\boldsymbol{n} \rangle_{\partial K} \\
-&\le h^{-1/2} \| \mathcal{J}_{\partial K}(\boldsymbol{v}_h) \|_{\partial K} 
-   \cdot h^{1/2} \| \epsilon(\boldsymbol{u}) - \mathcal{Q}_h \epsilon(\Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u}) \|_{\partial K} \\
-&\le C h^k \|\boldsymbol{u}\|_{k+1} \| \boldsymbol{v}_h \|_{1,h}.
-\end{align*}
-Third,
-\begin{align*}
-& (\nabla \cdot \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}, p - Q_h p) \\
-&\le \| \nabla \cdot \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}} \| \| p - Q_h p \| \\
-&\le C h^k \|p\|_k \| \boldsymbol{v}_h \|_{1,h}.
-\end{align*}
-Fourth,
-\begin{align*}
-& \langle Q_h p - p, \boldsymbol{v}_h^{\operatorname{div}} \cdot \boldsymbol{n} - \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}} \cdot \boldsymbol{n} \rangle_{\partial K} \\
-&\le \| Q_h p - p \|_{\partial K} \| (\boldsymbol{v}_h^{\operatorname{div}} - \Pi_K^o \boldsymbol{v}_h^{\operatorname{div}}) \cdot \boldsymbol{n} \|_{\partial K} \\
-&\le C h^k \|p\|_k \| \boldsymbol{v}_h \|_{1,h}.
-\end{align*}
-Finally,
-\begin{align*}
-& \langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)\boldsymbol{n} \rangle_{\partial K} \\
-&\le \| \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I) \|_{\partial K} 
-   \| \epsilon_h^w(\boldsymbol{v}_h) \|_{\partial K} \\
-&\le h^{-1/2} \| \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I) \|_{\partial K} 
-   \| \boldsymbol{v}_h \|_{1,h},
-\end{align*}
-and
-\begin{align*}
-& h^{-1} \| \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I) \|_{\partial K}^2 \\
-&\leq h^{-1} \left( \| \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u} - \Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u} \|_{\partial K}^2 
-   + \| \boldsymbol{u} - \Pi_K^o \boldsymbol{I}_K^{\operatorname{div}} \boldsymbol{u} \|_{\partial K}^2 \right) \\
-&\le \left( C h^k \|\boldsymbol{u}\|_{k+1} \right)^2.
-\end{align*}
-Hence,
+\AI{Set $e_h=\boldsymbol u_h-\boldsymbol u_I$ and $\xi_h=p_h-p_I$.
+The error equation is
+\begin{equation}\label{eq:erroreq}
+\begin{aligned}
+&a_h(e_h,\boldsymbol v_h)+b(\boldsymbol v_h,\xi_h)
+=\mathcal R(\boldsymbol v_h):=\sum_{K\in\mathcal K_h}\Bigl[\\
+&\quad(\varepsilon(\boldsymbol u)-\varepsilon(\boldsymbol\Pi_K^o\boldsymbol u_I^{\operatorname{div}}),
+ \varepsilon(\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}))_K\\
+&\quad+\langle\mathcal J_{\partial K}(\boldsymbol v_h),
+ [\varepsilon(\boldsymbol u)-\varepsilon(\boldsymbol\Pi_K^o\boldsymbol u_I^{\operatorname{div}})]\boldsymbol n\rangle_{\partial K}\\
+&\quad+\langle Q_hp-p,
+ (\boldsymbol v_h^{\operatorname{div}}-\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}})\cdot\boldsymbol n\rangle_{\partial K}\\
+&\quad-\langle\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol u_I),
+ \varepsilon_K^w(\boldsymbol v_h)\boldsymbol n\rangle_{\partial K}\Bigr]
+\qquad\forall\boldsymbol v_h\in\boldsymbol V_h.
+\end{aligned}
+\end{equation}
+To derive it, test \eqref{eq:stokes} with
+$\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}$, integrate by parts,
+and sum over $K$. The exact traction paired with
+$(\boldsymbol v_h^{\operatorname{div}}\cdot\boldsymbol n)\boldsymbol n+\boldsymbol v_h^t$
+cancels on interior faces and vanishes on the boundary.
+For the pressure terms, the volume projection preserves moments against
+$\nabla(Q_hp)$, and
 \[
-\langle \Pi_{\partial K} \mathcal{J}_{\partial K}(\boldsymbol{u}_I), \epsilon_h^w(\boldsymbol{v}_h)\boldsymbol{n} \rangle_{\partial K}
-\le C h^k \|\boldsymbol{u}\|_{k+1} \| \boldsymbol{v}_h \|_{1,h}.
+(\operatorname{div}\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}},p-Q_hp)_K=0.
 \]
-Combining the above estimates yields the desired error bound.
+For the strain terms, use \eqref{equ:weakstrain1} twice and recall that
+$\varepsilon(\boldsymbol\Pi_K^o\boldsymbol u_I^{\operatorname{div}})
+\in\mathbb P_{k-1}(K;\mathbb S)\subset\Sigma_h^{-1}(K)$.
+Its normal trace belongs to $V_k(F)$, so it pairs equally with the projected
+and full jumps.
+By \eqref{eq:commuting}, $\operatorname{div}\boldsymbol u_I^{\operatorname{div}}=0$.
+Hence
+\begin{equation}\label{eq:divergenceerror}
+b(e_h,q_h)=0\qquad\forall q_h\in S_h.
+\end{equation}}
+
+\AI{We estimate the four terms in \eqref{eq:erroreq} in order.
+The volume strain term is bounded by \eqref{eq:strain-approx} and the norm
+of $\boldsymbol v_h$. The boundary strain term uses the same approximation
+estimate and the full-jump bound \eqref{eq:fulljump}.
+For the pressure term, the local projection estimate is
+\[
+h_K^{1/2}\|p-Q_hp\|_{\partial K}\lesssim h_K^k|p|_{k,K};
+\]
+its other factor is the normal part of the jump, which the discrete norm
+controls directly. Finally, the polynomial trace inequality and the weak-strain
+upper bound give
+\[
+\begin{aligned}
+&|\langle\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol u_I),
+\varepsilon_K^w(\boldsymbol v_h)\boldsymbol n\rangle_{\partial K}|\\
+&\qquad\lesssim h_K^{-1/2}
+\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol u_I)\|_{\partial K}
+\|\boldsymbol v_h\|_{1,h,K}.
+\end{aligned}
+\]
+Use \eqref{eq:interpolant-jump}, then sum the estimates over $K$.
+The Cauchy--Schwarz inequality yields
+\begin{equation}\label{eq:residual-bound}
+|\mathcal R(\boldsymbol v_h)|\lesssim
+h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k)\|\boldsymbol v_h\|_{1,h}.
+\end{equation}}
 
 \subsection{Error estimates}
-Let \(e_h = \boldsymbol{u}_h - \boldsymbol{u}_I\) and \(\xi_h = p_h - p_I\). 
-Taking \(\boldsymbol{v}_h = e_h\) in the error equation and using the discrete divergence constraint 
-\(b(e_h, q_h)=0\) for all \(q_h\in S_h\) with \(q_h=\xi_h\), we obtain
+Taking $\boldsymbol v_h=e_h$ in \eqref{eq:erroreq} and
+$q_h=\xi_h$ in \eqref{eq:divergenceerror}, coercivity gives
 \[
-a_h(e_h, e_h) = \mathcal{R}(e_h),
+\|e_h\|_{1,h}^2\lesssim a_h(e_h,e_h)=\mathcal R(e_h).
 \]
-where \(\mathcal{R}(\boldsymbol{v}_h)\) denotes the right-hand side of the error equation. 
-From the coercivity of \(a_h\), we have
+Therefore, \eqref{eq:residual-bound} implies
 \[
-\|e_h\|_{1,h}^2 \lesssim a_h(e_h, e_h) = \mathcal{R}(e_h).
+\|e_h\|_{1,h}\lesssim h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
 \]
-Using the estimates for the terms of \(\mathcal{R}(\boldsymbol{v}_h)\) derived above, we get
+\AI{For the pressure, \eqref{eq:pressure-infsup} and \eqref{eq:erroreq} give
 \[
-|\mathcal{R}(\boldsymbol{v}_h)| \lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr) \|\boldsymbol{v}_h\|_{1,h}.
+\begin{aligned}
+\|\xi_h\|&\lesssim\sup_{0\ne\boldsymbol v_h\in\boldsymbol V_h}
+\frac{|\mathcal R(\boldsymbol v_h)-a_h(e_h,\boldsymbol v_h)|}{\|\boldsymbol v_h\|_{1,h}}\\
+&\lesssim\|e_h\|_{1,h}+h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
+\end{aligned}
 \]
-Taking \(\boldsymbol{v}_h = e_h\), it follows that
-\[
-\|e_h\|_{1,h} \lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr).
-\]
+Thus $\|\xi_h\|$ has the same bound.}
 
-Next, we estimate the pressure error. By the discrete inf-sup condition, for any \(q_h\in S_h\), there exists 
-\(\boldsymbol{v}_h\in \boldsymbol{V}_h\) such that
-\[
-b(\boldsymbol{v}_h, q_h) \gtrsim \|\boldsymbol{v}_h\|_{1,h} \|q_h\|.
-\]
-From the error equation, we have
-\[
-b(\boldsymbol{v}_h, \xi_h) = -a_h(e_h, \boldsymbol{v}_h) + \mathcal{R}(\boldsymbol{v}_h).
-\]
-Thus,
-\[
-\|\xi_h\| 
-\lesssim \sup_{\boldsymbol{v}_h\in \boldsymbol{V}_h} 
-\frac{-a_h(e_h, \boldsymbol{v}_h) + \mathcal{R}(\boldsymbol{v}_h)}{\|\boldsymbol{v}_h\|_{1,h}}
-\lesssim \|e_h\|_{1,h} + h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr).
-\]
-Combining this with the estimate for \(\|e_h\|_{1,h}\), we obtain
-\[
-\|\xi_h\| \lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr).
-\]
+\AI{In the velocity error norm, identify the smooth velocity with the pair
+$\{\boldsymbol u,\boldsymbol\Pi_{\partial K}^t\boldsymbol u\}$, and use the same
+norm formula with the $L^2$ volume projector.
+Polynomial approximation and \eqref{eq:Iapprox} give
+$\|\boldsymbol u-\boldsymbol u_I\|_{1,h}\lesssim h^k\|\boldsymbol u\|_{k+1}$.
+The triangle inequality and $\|p-Q_hp\|\lesssim h^k\|p\|_k$ then yield
+\begin{equation}\label{eq:final-error}
+\|\boldsymbol u-\boldsymbol u_h\|_{1,h}+\|p-p_h\|
+\lesssim h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
+\end{equation}}
 
-Finally, by the triangle inequality and the interpolation error estimates,
-\[
-\|\boldsymbol{u} - \boldsymbol{u}_h\|_{1,h} 
-\le \|\boldsymbol{u} - \boldsymbol{u}_I\|_{1,h} + \|e_h\|_{1,h} 
-\lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr),
-\]
-and
-\[
-\|p - p_h\| 
-\le \|p - p_I\| + \|\xi_h\| 
-\lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr).
-\]
-Therefore, we have the optimal error estimate
-\[
-\|\boldsymbol{u} - \boldsymbol{u}_h\|_{1,h} + \|p - p_h\|
-\lesssim h^k \bigl(\|\boldsymbol{u}\|_{k+1} + \|p\|_k\bigr).
-\]
+\input{numerics}
+
+
+\clearpage
+\AI{\begin{thebibliography}{8}
+\bibitem{BBCMMR2013}
+L. Beir\~ao da Veiga, F. Brezzi, A. Cangiani, G. Manzini, L. D. Marini, and A. Russo,
+\emph{Basic principles of virtual element methods},
+Math. Models Methods Appl. Sci., 23 (2013), pp. 199--214,
+\url{https://doi.org/10.1142/S0218202512500492}.
+
+\bibitem{BBMR2016}
+L. Beir\~ao da Veiga, F. Brezzi, L. D. Marini, and A. Russo,
+\emph{$H(\mathrm{div})$ and $H(\mathrm{curl})$-conforming virtual element methods},
+Numer. Math., 133 (2016), pp. 303--332,
+\url{https://doi.org/10.1007/s00211-015-0746-1}.
+
+\bibitem{BMM2022}
+L. Beir\~ao da Veiga, L. Mascotto, and J. Meng,
+\emph{Interpolation and stability estimates for edge and face virtual elements of general order},
+Math. Models Methods Appl. Sci., 32 (2022), pp. 1589--1631,
+\url{https://doi.org/10.1142/S0218202522500373}.
+
+\bibitem{BBF2013}
+D. Boffi, F. Brezzi, and M. Fortin,
+\emph{Mixed Finite Element Methods and Applications},
+Springer Series in Computational Mathematics, vol. 44, Springer, Heidelberg, 2013,
+\url{https://doi.org/10.1007/978-3-642-36519-5}.
+
+\bibitem{Brenner2004}
+S. C. Brenner,
+\emph{Korn's inequalities for piecewise $H^1$ vector fields},
+Math. Comp., 73 (2004), pp. 1067--1087,
+\url{https://doi.org/10.1090/S0025-5718-03-01579-5}.
+
+\bibitem{ChenWang2019}
+L. Chen and F. Wang,
+\emph{A divergence free weak virtual element method for the Stokes problem on polytopal meshes},
+J. Sci. Comput., 78 (2019), pp. 864--886,
+\url{https://doi.org/10.1007/s10915-018-0796-5}.
+
+\bibitem{ChenHuangWei2024}
+C. Chen, X. Huang, and H. Wei,
+\emph{Virtual element methods without extrinsic stabilization},
+SIAM J. Numer. Anal., 62 (2024), pp. 567--591,
+\url{https://doi.org/10.1137/22M1504196}.
+
+\bibitem{MuYeZhang2021}
+L. Mu, X. Ye, and S. Zhang,
+\emph{A stabilizer-free, pressure-robust, and superconvergence weak Galerkin
+finite element method for the Stokes equations on polytopal mesh},
+SIAM J. Sci. Comput., 43 (2021), pp. A2614--A2637,
+\url{https://doi.org/10.1137/20M1380405}.
+\end{thebibliography}}
 
 \end{document} 

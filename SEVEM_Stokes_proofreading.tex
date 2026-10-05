@@ -1,0 +1,192 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,enumitem}
+\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+\setlength{\emergencystretch}{1em}
+\setlist[enumerate]{leftmargin=*,itemsep=0.3em}
+\newcommand{\eps}{\varepsilon}
+\title{Proofreading notes for SEVEM\_Stokes}
+\author{}
+\date{October 4, 2026}
+\begin{document}
+\maketitle
+\noindent Scope: proof correctness, missing references, and misprints. Keep the
+method, section order, and numerical data. Mark substantive manuscript changes
+with \verb|\AI{...}|; leave routine wording and typo corrections unmarked.
+The proof corrections and presentation edits below have been applied to
+\texttt{SEVEM\_Stokes.tex} and \texttt{numerics.tex}. Author checks remain
+listed separately. The original sources and PDF are saved in \texttt{proofreading/original/}.
+
+\section*{Proof corrections}
+\begin{enumerate}
+\item \textbf{Mesh assumptions (Section 1.1).}
+Star-shapedness alone does not make the face cones uniformly regular, and the
+center of the largest inscribed ball need not be a valid star center. Choose the
+center of a ball with respect to which the element is star-shaped. State the face
+and cone regularity, bounded face count, and diameter comparability used by the
+trace and scaling estimates. Use $h_K$ locally and $h=\max_K h_K$ globally.
+
+\item \textbf{Velocity degrees of freedom (Section 1.2).}
+Replace the set difference $\mathbb P_k(K;\mathbb R^d)\setminus\mathbf G_k(K)$
+with the $L^2(K)$-orthogonal complement $\mathbf G_k(K)^\perp$ within the
+polynomial vector space. The set difference is not a linear space and does not
+specify an independent set of moments. State $k\geq1$ and the convention that
+negative-degree polynomial spaces are zero. Cite the unisolvence result.
+
+\item \textbf{Stress space (Section 2.1).}
+The two original definitions of $\Sigma_k(T)$ differ. Extending $\mathbb P_k(F)$
+constantly in the normal direction and adding $\mathbb P_{k-1}(T)$ does not give
+all of $\mathbb P_k(T)$ in the normal--normal block. For $k=1$, it gives no
+normal-coordinate linear term, whereas the displayed block decomposition does.
+Use the block decomposition, which agrees with the stated normal bubble
+$\lambda_{\boldsymbol x_K}\mathbb P_{k-1}(T)\boldsymbol n\otimes\boldsymbol n$.
+This choice must be checked against the implementation.
+
+\item \textbf{Stress unisolvence (Lemma 2.2 in the original source).}
+Replace the bubble set difference by its orthogonal complement to the selected
+tensor-polynomial subspace. Add the missing proof: zero face moments put the
+tensor in the bubble space; zero complementary moments put it in the selected
+subspace; global polynomial moments, tested with the dual tensor basis, then
+force every polynomial coefficient to vanish. Count dimensions to establish
+existence as well as uniqueness.
+
+\item \textbf{Uniform stability (Assumption 2.1).}
+Spanning $\mathbb S$ on each element proves algebraic independence but does not
+give a mesh-independent constant. Require a uniformly conditioned choice of
+normalized face-tangential tensors. Otherwise the scaling constant in the
+stress inf-sup argument may diverge as the mesh changes. Prescribe tensor face
+moments separately on each element side, since the stress is discontinuous.
+
+\item \textbf{Norm and Korn arguments (Section 2.2).}
+The original local equivalence with the full gradient is false: choose a
+nonzero rigid rotation and matching boundary values. The strain and projected
+jump vanish, but the gradient does not. Replace it by a global broken Korn
+inequality, including boundary faces. In the norm proof, use both zero normal
+and zero tangential boundary values; the statement that boundary normals span
+$\mathbb R^d$ alone does not justify eliminating an affine rigid motion.
+
+\item \textbf{Full versus projected jump (Sections 2.2 and 3.2).}
+The norm controls $\Pi_{\partial K}\mathcal J_{\partial K}$, while the residual
+contains $\mathcal J_{\partial K}$. Add
+\[
+h_K^{-1/2}\|\mathcal J_{\partial K}(\boldsymbol v_h)\|_{\partial K}
+\lesssim\|\boldsymbol v_h\|_{1,h,K}.
+\]
+To prove it, subtract a local rigid motion from
+$\boldsymbol w=\Pi_K^o\boldsymbol v_h^{\rm div}$, use Korn's inequality modulo
+rigid motions and the trace inequality, and use the fact that the tangential
+face space contains the tangential traces of rigid motions.
+
+\item \textbf{Pressure stability and interpolation (Section 3).}
+Add proofs of the pressure continuity and right-inverse lemmas. Recall the
+commuting identity
+\[
+\operatorname{div}I_K^{\rm div}\boldsymbol v
+=Q_h(\operatorname{div}\boldsymbol v)|_K.
+\]
+Construct the pressure lifting by interpolating an $H_0^1$ divergence lifting,
+and bound its discrete norm. Since $b(\boldsymbol v_h,q_h)=
+-(\operatorname{div}\boldsymbol v_h^{\rm div},q_h)$, use the negative lifting
+when a positive inf-sup numerator is needed. Add absolute values to continuity
+bounds and exclude zero denominators in suprema.
+
+\item \textbf{Error equation and approximation (Section 3.2).}
+Restore sums over $K$: cancellation of the exact traction on interior faces is
+a global statement. The strain of $\Pi_K^o I_K^{\rm div}\boldsymbol u$ already
+belongs to $\mathbb P_{k-1}(K;\mathbb S)$, so its stress projection is redundant.
+Also,
+\[
+(\operatorname{div}\Pi_K^o\boldsymbol v_h^{\rm div},p-Q_hp)_K=0.
+\]
+The original estimate drops $\eps(\boldsymbol u-\Pi_K^o\boldsymbol u)$ without
+justification. Retain the polynomial approximation error and bound
+$\boldsymbol u-\Pi_K^o I_K^{\rm div}\boldsymbol u$ in the volume and on faces.
+Estimate only the virtual interpolant's normal trace, which is a face
+projection; no full $H^1$ trace of a virtual field is needed.
+
+\item \textbf{Meaning of the final velocity error (Section 3.3).}
+The norm is initially defined only on discrete pairs. Identify a smooth velocity
+with $\{\boldsymbol u,\Pi_{\partial K}^t\boldsymbol u\}$ before writing
+$\|\boldsymbol u-\boldsymbol u_h\|_{1,h}$. Extend the volume $L^2$ projector
+to all $L^2$ vector fields. Keep the stated $O(h^k)$ estimate; do not add a claim
+of pressure robustness or an $L^2$ velocity theorem.
+\end{enumerate}
+
+\section*{References to add at the point of use}
+\begin{enumerate}
+\item Beir\~ao da Veiga, Brezzi, Marini, and Russo,
+\emph{$H(\mathrm{div})$ and $H(\mathrm{curl})$-conforming virtual element methods},
+Numerische Mathematik 133 (2016), 303--332.
+\href{https://doi.org/10.1007/s00211-015-0746-1}{doi:10.1007/s00211-015-0746-1}.
+Use for the velocity space, moments, unisolvence, and computable projection.
+\item Beir\~ao da Veiga, Mascotto, and Meng,
+\emph{Interpolation and stability estimates for edge and face virtual elements
+of general order}, Mathematical Models and Methods in Applied Sciences 32
+(2022), 1589--1631.
+\href{https://doi.org/10.1142/S0218202522500373}{doi:10.1142/S0218202522500373}.
+Use as supporting interpolation and stability literature; its space variants
+do not remove the need to state the estimates for the present interpolant.
+\item Brenner, \emph{Korn's inequalities for piecewise $H^1$ vector fields},
+Mathematics of Computation 73 (2004), 1067--1087.
+\href{https://doi.org/10.1090/S0025-5718-03-01579-5}{doi:10.1090/S0025-5718-03-01579-5}.
+Use for the global broken Korn inequality.
+\item Boffi, Brezzi, and Fortin, \emph{Mixed Finite Element Methods and
+Applications}, Springer, 2013.
+\href{https://doi.org/10.1007/978-3-642-36519-5}{Publisher and DOI}.
+Use for the continuous divergence lifting and mixed-method well-posedness.
+\item Chen and Wang, \emph{A divergence free weak virtual element method for
+the Stokes problem on polytopal meshes}, Journal of Scientific Computing 78
+(2019), 864--886.
+\href{https://doi.org/10.1007/s10915-018-0796-5}{doi:10.1007/s10915-018-0796-5}.
+Use to identify the earlier weak VEM Stokes framework. A full comparison with stabilizer-free Stokes methods belongs in an
+introduction if one is added later.
+\item Mu, Ye, and Zhang, \emph{A stabilizer-free, pressure-robust, and
+superconvergence weak Galerkin finite element method for the Stokes equations
+on polytopal mesh}, SIAM Journal on Scientific Computing 43 (2021),
+A2614--A2637.
+\href{https://doi.org/10.1137/20M1380405}{doi:10.1137/20M1380405}.
+Add a short reference to this related stabilizer-free Stokes method.
+
+\end{enumerate}
+
+\section*{Misprints and presentation}
+\begin{enumerate}
+\item Define the symmetric strain, rigid motions, tensor trace, inner products,
+and mesh sizes before use. Distinguish a tensor's normal trace from its scalar
+matrix trace. Use $K$ consistently in place of the unexplained $E$.
+\item Use the existing tangential projection to shorten the weak-strain formula.
+Replace the two unconditional ``$\ne$'' statements by an explanation that
+integration by parts also produces internal stress-jump terms.
+\item Replace the hard-coded equation number 14 and the literal ``problem (1)''
+with labels. Correct inconsistent boldface, missing integration measures,
+``degree of freedoms'', and repeated inequalities. Recall only the definitions
+needed by a proof; keep routine language plain and short.
+\item Repair undefined commands in \texttt{numerics.tex}, use a proper numerical
+section heading, and give every table a label. The files
+\texttt{fig/poly}, \texttt{fig/tri}, and \texttt{fig/rect} are absent. Guard the
+figure input and state the missing-asset issue rather than inventing plots.
+\end{enumerate}
+
+\section*{Author checks still needed}
+\begin{enumerate}
+\item \textbf{Rectangular meshes are outside the stated proof.}
+For an axis-aligned rectangle, the face-tangential symmetric tensors span only
+the two diagonal matrices, not all of $\mathbb S$. Thus Assumption 2.1 fails.
+Keep the table as an empirical result, with this limitation stated. Extending
+the theory to rectangles would require additional analysis beyond this review.
+The geometry of the polygonal meshes must also satisfy the strengthened
+uniform assumption before the theorem is applied to them.
+\item \textbf{Numerical reproducibility.}
+Supply the exact velocity, pressure, force, boundary values, viscosity, mesh
+construction, and definitions of the reported discrete $L^2$ and maximum norms.
+The source specifies only ``sincosdata''. Confirm that the implementation uses
+the analyzed strain space: the original numerical section uses
+$\Sigma_0^{-1}$ while Section 2 uses $\Sigma_1$, and introduces $2\nu$ whereas
+the model has coefficient one. The reported values are preserved, but their
+agreement with the corrected formulation cannot be certified from these files.
+\item \textbf{Front matter.}
+The title command is commented out, the abstract and keywords are absent, and
+the submission date and funding statement are placeholders. These require
+author-supplied information; they are not filled in during proofreading.
+\end{enumerate}
+\end{document}

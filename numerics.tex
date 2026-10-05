@@ -1,0 +1,113 @@
+% !TEX root = SEVEM_Stokes.tex
+\section{Numerical results}\label{sec:numerics}
+
+\AI{For $k=1$, the velocity uses $\boldsymbol V_h$ and the pressure is
+piecewise constant on the primal mesh $\mathcal K_h$.
+The coefficient of the symmetric strain in \eqref{eq:stokes} is one,
+which corresponds to $2\nu=1$ in the usual viscosity convention.
+The weak strain \eqref{equ:weakstrain1} has the equivalent form
+\[
+(\varepsilon_K^w(\boldsymbol v),\boldsymbol\sigma)_K
+=-(\boldsymbol v^{\operatorname{div}},\operatorname{div}_{w,K}\boldsymbol\sigma)_K
++\langle\boldsymbol v^{\operatorname{div}}\cdot\boldsymbol n,
+ (\boldsymbol\sigma\boldsymbol n)\cdot\boldsymbol n\rangle_{\partial K}
++\langle\boldsymbol v^t,\Pi_F(\boldsymbol\sigma\boldsymbol n)\rangle_{\partial K},
+\]
+where $\boldsymbol\sigma\in\Sigma_h^{-1}(K)$ with $k=1$, and
+$\operatorname{div}_{w,K}\boldsymbol\sigma\in\mathbb P_1(K;\mathbb R^d)$ satisfies
+\[
+(\operatorname{div}_{w,K}\boldsymbol\sigma,\boldsymbol q)_K
+=-(\boldsymbol\sigma,\nabla\boldsymbol q)_K
++\langle\boldsymbol\sigma\boldsymbol n,\boldsymbol q\rangle_{\partial K}
+\qquad\forall\boldsymbol q\in\mathbb P_1(K;\mathbb R^d).
+\]
+This definition includes the internal stress jumps through integration by
+parts on the cones. Its equivalence follows from the volume projection
+and the symmetry of $\boldsymbol\sigma$.}
+
+The reported \texttt{sincosdata} test is posed on the unit square.
+Tables~\ref{tab:poly}--\ref{tab:rect} give the supplied results.
+\AI{The energy error is $\|\boldsymbol u_I-\boldsymbol u_h\|_{A_h}
+:=a_h(\boldsymbol u_I-\boldsymbol u_h,\boldsymbol u_I-\boldsymbol u_h)^{1/2}$.
+The energy and total pressure errors approach first-order convergence on
+these meshes. Faster convergence in some other columns is an empirical
+observation; it is not proved by \eqref{eq:final-error}.}
+
+\AI{\begin{remark}[Numerical data to confirm]
+The supplied files do not specify the exact velocity, pressure, force,
+boundary data, viscosity used in the computations, or the definitions of
+$\|\cdot\|_{0,h}$ and the reported maximum norms.
+The implemented strain space must also be checked against
+\eqref{eq:strainspace}; the original numerical description used a different
+index. The table values are retained pending these checks.
+The rectangular meshes do not satisfy Assumption~\ref{meshassumption}:
+their face-tangential tensors span only diagonal symmetric matrices.
+Table~\ref{tab:rect} therefore reports a test outside the proved mesh class.
+The three mesh figure files were not supplied.
+\end{remark}}
+
+% ===== Table 1 =====
+\begin{table}[htbp]
+  \centering \footnotesize
+  \caption{Results on polygonal meshes obtained from a triangle-mesh dual.}\label{tab:poly}
+  \setlength{\tabcolsep}{3pt}\resizebox{\textwidth}{!}{\begin{tabular}{cccccccc}
+    \toprule
+    DoFs & $h$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{A_h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{0,h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{\infty}$ & $\|p_I-p_h\|$ & $\|p-p_h\|$ & $\|p_I-p_h\|_{\text{max}}$ \\
+    \midrule
+    314   & 1.43e-01 & 8.767e-01 & 2.588e-02 & 7.996e-02 & 2.071e-01 & 2.454e-01 & 5.002e-01 \\
+    978   & 7.78e-02 & 4.012e-01 & 9.135e-03 & 2.645e-02 & 6.612e-02 & 1.007e-01 & 1.870e-01 \\
+    3362  & 4.12e-02 & 1.884e-01 & 2.712e-03 & 7.111e-03 & 1.936e-02 & 4.463e-02 & 7.481e-02 \\
+    12354 & 2.13e-02 & 9.119e-02 & 7.279e-04 & 1.817e-03 & 5.869e-03 & 2.145e-02 & 3.068e-02 \\
+    47234 & 1.08e-02 & 4.490e-02 & 1.875e-04 & 4.573e-04 & 1.874e-03 & 1.061e-02 & 1.335e-02 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+% ===== Table 2 =====
+\begin{table}[htbp]
+  \centering\footnotesize
+  \caption{Results on triangular meshes.}\label{tab:tri}
+  \setlength{\tabcolsep}{3pt}\resizebox{\textwidth}{!}{\begin{tabular}{cccccccc}
+    \toprule
+    DoFs & $h$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{A_h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{0,h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{\infty}$ & $\|p_I-p_h\|$ & $\|p-p_h\|$ & $\|p_I-p_h\|_{\text{max}}$ \\
+    \midrule
+    232   & 2.50e-01 & 4.289e-01 & 1.463e-02 & 3.022e-02 & 5.357e-01 & 5.509e-01 & 8.008e-01 \\
+    880   & 1.25e-01 & 1.949e-01 & 2.959e-03 & 6.035e-03 & 2.867e-01 & 2.940e-01 & 4.262e-01 \\
+    3424  & 6.25e-02 & 9.410e-02 & 6.990e-04 & 1.479e-03 & 1.450e-01 & 1.486e-01 & 2.115e-01 \\
+    13504 & 3.12e-02 & 4.659e-02 & 1.727e-04 & 4.138e-04 & 7.265e-02 & 7.446e-02 & 1.045e-01 \\
+    53632 & 1.56e-02 & 2.323e-02 & 4.308e-05 & 1.098e-04 & 3.634e-02 & 3.725e-02 & 5.187e-02 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+% ===== Table 3 =====
+\begin{table}[htbp]
+  \centering\footnotesize
+  \caption{Results on rectangular meshes, outside Assumption~\ref{meshassumption}.}\label{tab:rect}
+  \setlength{\tabcolsep}{3pt}\resizebox{\textwidth}{!}{\begin{tabular}{cccccccc}
+    \toprule
+    DoFs & $h$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{A_h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{0,h}$ & $\|\boldsymbol u_I-\boldsymbol u_h\|_{\infty}$ & $\|p_I-p_h\|$ & $\|p-p_h\|$ & $\|p_I-p_h\|_{\text{max}}$ \\
+    \midrule
+    152    & 2.50e-01 & 6.193e-01 & 4.377e-02 & 7.423e-02 & 1.557e-02 & 1.574e-01 & 2.227e-02 \\
+    560    & 1.25e-01 & 2.438e-01 & 1.277e-02 & 1.582e-02 & 9.016e-03 & 8.021e-02 & 1.778e-02 \\
+    2144   & 6.25e-02 & 1.083e-01 & 3.348e-03 & 4.464e-03 & 2.688e-03 & 4.011e-02 & 6.658e-03 \\
+    8384   & 3.12e-02 & 5.211e-02 & 8.477e-04 & 1.148e-03 & 6.957e-04 & 2.004e-02 & 1.943e-03 \\
+    33152  & 1.56e-02 & 2.579e-02 & 2.126e-04 & 2.889e-04 & 1.752e-04 & 1.002e-02 & 5.205e-04 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+% The figure is included only when all three supplied assets are available.
+\IfFileExists{fig/poly.pdf}{%
+  \IfFileExists{fig/tri.pdf}{%
+    \IfFileExists{fig/rect.pdf}{%
+      \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=.31\textwidth]{fig/poly.pdf}\hfill
+      \includegraphics[width=.31\textwidth]{fig/tri.pdf}\hfill
+      \includegraphics[width=.31\textwidth]{fig/rect.pdf}
+      \caption{Polygonal, triangular, and rectangular test meshes.}\label{fig:meshes}
+      \end{figure}
+    }{}%
+  }{}%
+}{}%
