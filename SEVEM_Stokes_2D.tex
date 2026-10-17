@@ -12,6 +12,8 @@
 \usepackage{lipsum}
 \usepackage{amsfonts}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{calc,shapes.geometric}
 \usepackage{epstopdf}
 \usepackage{algorithmic}
 \usepackage{mathrsfs}
@@ -63,12 +65,10 @@
 \newcommand{\LC}[1]{\textcolor{red}{#1}}
 \newcommand{\XH}[1]{\textcolor{blue}{#1}}
 \newcommand{\RW}[1]{\textcolor{cyan}{#1}}
+% Compatibility for remaining annotations in numerics.tex; print normally.
+\providecommand{\AI}[1]{#1}
 \newcommand{\RZ}[1]{\textcolor{brown}{#1}}
 % Substantive proofreading changes; use #1 alone for a clean copy.
-\newcommand{\AI}[1]{#1}
-
-
-
 \title{A Stabilizer-Free Weak Virtual Element Method\\
 for Stokes Equations with Strongly Symmetric Stress}
 
@@ -99,7 +99,7 @@ Changchun, Jilin 130012, China
 
 % REQUIRED
 \begin{abstract}
-\AI{We develop a stabilizer-free weak virtual element method for the
+We develop a stabilizer-free weak virtual element method for the
 incompressible Stokes equations on two-dimensional polygonal meshes using
 a strongly symmetric local viscous-stress reconstruction. The velocity
 combines an $H(\operatorname{div})$-conforming virtual field with
@@ -114,7 +114,7 @@ local tensor enrichment provides the corresponding construction for
 $k=1$. The discrete velocity is exactly divergence-free elementwise,
 and we derive stability and optimal-order velocity and pressure estimates
 under the stated hypotheses. Numerical experiments examine the
-convergence of the method on polygonal meshes.}
+convergence of the method on polygonal meshes.
 \end{abstract}
 
 % REQUIRED
@@ -134,7 +134,7 @@ polygonal meshes, strongly symmetric local stress
 %74B05: Classical linear elasticity
 
 \section{Introduction}\label{sec:introduction}
-\AI{Let $\Omega\subset\mathbb R^2$ be a polygonal domain. The
+Let $\Omega\subset\mathbb R^2$ be a polygonal domain. The
 incompressible Stokes equations may be expressed using the symmetric
 Cauchy stress $\boldsymbol\sigma=\boldsymbol\tau-p\boldsymbol I$,
 where $\boldsymbol\tau=\varepsilon(\boldsymbol u)$ is the viscous
@@ -181,7 +181,7 @@ Section~\ref{sec:spaces} defines the polygonal meshes and velocity
 spaces. Section~\ref{sec:strain} constructs and analyzes the local
 symmetric-tensor reconstruction. Section~\ref{sec:scheme} gives the
 scheme and its error estimates. Numerical results are discussed in
-Section~\ref{sec:numerics}.}
+Section~\ref{sec:numerics}.
 
 \section{VEM spaces}\label{sec:spaces}
 
@@ -198,15 +198,15 @@ external force field \(\boldsymbol{f} \in \boldsymbol{L}^2(\Omega)\), we conside
 \end{equation}
 
 
-\AI{Here $\varepsilon(\boldsymbol u):=(\nabla\boldsymbol u+
+Here $\varepsilon(\boldsymbol u):=(\nabla\boldsymbol u+
 \nabla\boldsymbol u^{\mathsf T})/2$ is the symmetric strain, and the pressure
 is normalized by $\int_\Omega p\,\mathrm dx=0$. We use $(\cdot,\cdot)_K$ and
 $\langle\cdot,\cdot\rangle_{\partial K}$ for the volume and boundary $L^2$
 inner products, and $\|\cdot\|_K$ and $\|\cdot\|_{\partial K}$ for their norms.
-}
+
 
 \subsection{Primal and dual meshes}
-\AI{Let $\mathcal K_h$ be a conforming mesh of convex polygons in
+Let $\mathcal K_h$ be a conforming mesh of convex polygons in
 $\Omega$. Each element $K$ is star-shaped with respect to a ball
 of radius at least $\rho h_K$, where $h_K=\operatorname{diam}K$
 and $\rho>0$ is independent of $h:=\max_K h_K$. We choose
@@ -224,7 +224,7 @@ uniformly shape-regular simplicial refinement with simplex
 diameters comparable to $h_K$. In particular,
 $h_F:=\operatorname{diam}F$ is comparable to $h_K$. These
 assumptions are used in the trace, inverse, and scaling estimates
-below.}
+below.
 
 Let $\mathcal F_h$ and $\mathcal F_h^T$ be the face sets of $\mathcal K_h$
 and $\mathcal T_h$, respectively. Their interior faces are denoted by
@@ -252,16 +252,16 @@ These subspaces give the following $\boldsymbol{t}$-$\boldsymbol{n}$ decompositi
 \end{align}
 
 
-\AI{Fix an integer $k\geq1$.} For \(K \in \mathcal{K}_h\), let \(\mathbb{P}_k(K)\) be the space of polynomials on \(K\) of degree at most \(k\). Let \(\mathbb{P}_k(K; \mathbb{X}) = \mathbb{P}_k(K) \otimes \mathbb{X}\), where \(\mathbb{X}\) is \(\mathbb{R}^d\) for vectors, \(\mathbb{S}\) for symmetric matrices, and \(\mathbb{K}\) for skew-symmetric matrices.
+Fix an integer $k\geq1$. For \(K \in \mathcal{K}_h\), let \(\mathbb{P}_k(K)\) be the space of polynomials on \(K\) of degree at most \(k\). Let \(\mathbb{P}_k(K; \mathbb{X}) = \mathbb{P}_k(K) \otimes \mathbb{X}\), where \(\mathbb{X}\) is \(\mathbb{R}^d\) for vectors, \(\mathbb{S}\) for symmetric matrices, and \(\mathbb{K}\) for skew-symmetric matrices.
 
-\AI{We set $\mathbb P_j=\{0\}$ for $j<0$, and
+We set $\mathbb P_j=\{0\}$ for $j<0$, and
 $\mathbf{RM}(K)=\{\boldsymbol a+\boldsymbol B\boldsymbol x:
-\boldsymbol a\in\mathbb R^d,\ \boldsymbol B\in\mathbb K\}$.}
+\boldsymbol a\in\mathbb R^d,\ \boldsymbol B\in\mathbb K\}$.
 
 \subsection{VEM spaces}
 
-\AI{The local velocity space and its degrees of freedom are the
-$H(\operatorname{div})$ virtual elements of \cite{BBMR2016}.}
+The local velocity space and its degrees of freedom are the
+$H(\operatorname{div})$ virtual elements of \cite{BBMR2016}.
 On each element \(K\in\mathcal{K}_h\),  we introduce a local space
 \begin{equation*}
 \boldsymbol{V}_K = \left\{
@@ -282,12 +282,12 @@ The degrees of freedom (DoFs) for $\boldsymbol V_K$ are
 \begin{align*}
 \text{Type I} \qquad & \int_F \boldsymbol{v} \cdot \boldsymbol{n} q_k \, \mathrm{d}s \qquad \forall q_k \in \mathbb{P}_k(F), F \subset \partial K, \\
 \text{Type II} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_{k-2} \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_{k-2} \in \mathbf{G}_{k-2}(K), \\
-\text{Type III} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_k \in \AI{\mathbf G_k(K)^\perp},
+\text{Type III} \qquad & \int_K \boldsymbol{v} \cdot \boldsymbol{q}_k \, \mathrm{d}\boldsymbol{x} \qquad \forall \boldsymbol{q}_k \in \mathbf G_k(K)^\perp,
 \end{align*}
 where $\mathbf G_k(K)=\nabla\mathbb P_{k+1}(K)$.
-\AI{Here $\mathbf G_k(K)^\perp$ is its $L^2(K)$-orthogonal complement in
+Here $\mathbf G_k(K)^\perp$ is its $L^2(K)$-orthogonal complement in
 $\mathbb P_k(K;\mathbb R^d)$. Moments are taken against a basis of each
-listed space. These DoFs are unisolvent \cite{BBMR2016}.}
+listed space. These DoFs are unisolvent \cite{BBMR2016}.
 
 On each face \(F \in \mathcal{F}_h\), we introduce a space
 $$
@@ -310,7 +310,7 @@ The weak virtual element space is
 
 \subsection{Projection operator}
 
-\AI{For $\boldsymbol v\in\boldsymbol L^2(K)$,} let \(\boldsymbol{\Pi}_K^o \boldsymbol{v} \in \mathbb{P}_k(K;\mathbb{R}^d)\) satisfy
+For $\boldsymbol v\in\boldsymbol L^2(K)$, let \(\boldsymbol{\Pi}_K^o \boldsymbol{v} \in \mathbb{P}_k(K;\mathbb{R}^d)\) satisfy
 \[
 \int_K \boldsymbol{\Pi}_K^o \boldsymbol{v} \cdot \boldsymbol{q}\,\mathrm dx = \int_K \boldsymbol{v} \cdot \boldsymbol{q}\,\mathrm dx \quad \forall \boldsymbol{q} \in \mathbb{P}_k(K;\mathbb{R}^d).
 \]
@@ -320,7 +320,7 @@ For $\boldsymbol v\in\boldsymbol V_K$, Type III DoFs give the moments in $\mathb
 \int_K \boldsymbol{v} \cdot \nabla p_{k+1} \, \mathrm{d}\boldsymbol{x} = - \int_K \operatorname{div} \boldsymbol{v} \, p_{k+1} \, \mathrm{d}\boldsymbol{x} + \int_{\partial K} \boldsymbol{v} \cdot \boldsymbol{n} \, p_{k+1} \, \mathrm{d}s.
 \]
 
-\AI{The normal trace is determined by Type I DoFs. The divergence is determined
+The normal trace is determined by Type I DoFs. The divergence is determined
 by Type I and II DoFs through
 \[
 (\operatorname{div}\boldsymbol v,q)_K
@@ -328,14 +328,14 @@ by Type I and II DoFs through
 \qquad q\in\mathbb P_{k-1}(K).
 \]
 Thus every term above is computable \cite{BBMR2016}. We write
-$(\boldsymbol\Pi_h^o\boldsymbol v)|_K=\boldsymbol\Pi_K^o(\boldsymbol v|_K)$.}
+$(\boldsymbol\Pi_h^o\boldsymbol v)|_K=\boldsymbol\Pi_K^o(\boldsymbol v|_K)$.
 
 
 
 \section{Weak strain}\label{sec:strain}
 
 \subsection{Weak strain space}
-\AI{Let $T\in\mathcal T_h(K)$ have base face $F$.
+Let $T\in\mathcal T_h(K)$ have base face $F$.
 The local weak strain space is
 \begin{equation}\label{eq:strainspace}
 \begin{aligned}
@@ -355,7 +355,7 @@ V_k(F):=\mathbb P_k(F)\boldsymbol n_F\oplus\boldsymbol V_F.
 \]
 The normal trace $\tr_F\boldsymbol\sigma:=\boldsymbol\sigma\boldsymbol n_F|_F$
 satisfies $\tr_F\Sigma_k(T)=V_k(F)$. In particular,
-$\mathbb P_{k-1}(K;\mathbb S)$ is contained in the piecewise strain space on $K$.}
+$\mathbb P_{k-1}(K;\mathbb S)$ is contained in the piecewise strain space on $K$.
 
 We define the local symmetric tensor space on $K$ as the discontinuous polynomial space
 \begin{align}\label{eq:202411132}
@@ -373,10 +373,10 @@ where $\chi_{T_i}$ is the characteristic function of $T_i$. We  define the bubbl
 \end{aligned}
 \end{equation}
 
-\AI{Here $F_i$ is the base face of $T_i$, $\boldsymbol n_i$ is its outward normal,
+Here $F_i$ is the base face of $T_i$, $\boldsymbol n_i$ is its outward normal,
 and $\lambda_{\boldsymbol x_K}$ is the affine function on $T_i$ that equals
 one at $\boldsymbol x_K$ and zero on $F_i$. The bubble space imposes no
-continuity across the internal faces of $K$.}
+continuity across the internal faces of $K$.
 
 \begin{assumption}[Intrinsic bubble--moment stability]\label{bubbleassumption}
 There is a constant $\beta_*>0$, independent of $h$ and $K$, such that
@@ -391,7 +391,7 @@ The constant may depend on $k$ and the mesh-regularity parameters, but not on
 $h$ or on the particular element $K$.
 \end{assumption}
 
-\AI{Assumption~\ref{bubbleassumption} is intrinsic to the local reconstruction:
+Assumption~\ref{bubbleassumption} is intrinsic to the local reconstruction:
 it requires the zero-traction bubble space to detect every polynomial symmetric
 tensor needed in the volume moments.  It does not select preferred faces or
 tensor directions.  Define the moment operator
@@ -416,10 +416,10 @@ where orthogonality is in $L^2(K;\mathbb S)$.  Consequently
 \dim\mathcal E_K=\dim\mathbb P_{k-1}(K;\mathbb S),
 \]
 and the restriction of $\mathcal M_K$ to $\mathcal E_K$ is an isomorphism
-with uniformly bounded inverse.}
+with uniformly bounded inverse.
 
 \begin{remark}[Relation with the face-spanning condition]\label{rem:oldspan}
-\AI{A sufficient, but generally stronger, way to verify
+A sufficient, but generally stronger, way to verify
 Assumption~\ref{bubbleassumption} is to select $d(d+1)/2$ uniformly
 well-conditioned tensors from the face-tangential spaces
 $\mathscr T^F(\mathbb S)$ that span $\mathbb S$.  The corresponding functions
@@ -429,7 +429,7 @@ $\mathbb P_{k-1}(K;\mathbb S)$.  This face-spanning criterion, used as a geometr
 formulation of the analysis, is made precise in
 Proposition~\ref{prop:span-implies-bm}. It gives a sufficient construction
 of a stable right inverse of $\mathcal M_K$, but is not required by the
-present intrinsic bubble-moment condition.}
+present intrinsic bubble-moment condition.
 \end{remark}
 
 
@@ -537,9 +537,9 @@ geometries in a compact set on which the smallest singular value cannot
 vanish.  Scaling back gives the asserted uniform bound.
 \end{proof}
 
-\AI{The next result is important because it verifies the intrinsic condition
+The next result is important because it verifies the intrinsic condition
 on a mesh family excluded by the face-spanning criterion.  We first record a
-scalar polynomial lemma on the reference square.}
+scalar polynomial lemma on the reference square.
 
 \begin{lemma}[Weighted cone moments on a square]\label{lem:square-moments}
 Let $\widehat K=(-1,1)^2$ and let $\widehat K$ be divided by its center into
@@ -945,7 +945,7 @@ $\boldsymbol v_K=\{\boldsymbol w_K,\boldsymbol0\}$, one has
  \|\boldsymbol v_K\|_{1,h,K}^2\simeq |K|.
 \]
 \end{lemma}
-\AI{\begin{proof}
+\begin{proof}
 Since $\boldsymbol w_K\in\mathbb P_1(K;\mathbb R^2)$,
 $\boldsymbol\Pi_K^o\boldsymbol w_K=\boldsymbol w_K$ and
 $\varepsilon(\boldsymbol w_K)=\boldsymbol S$.  Moreover the normal jump
@@ -979,13 +979,13 @@ The stress space is the direct sum of these three blocks on every cone, so
 \eqref{equ:weakstrain1} gives
 $\varepsilon_K^w(\boldsymbol v_K)=0$.  The local mesh-dependent norm contains
 $\|\boldsymbol S\|_K^2\simeq |K|$ and is therefore comparable to $|K|$.
-\end{proof}}
+\end{proof}
 
-\AI{The local degeneracy cannot be controlled solely through the global
+The local degeneracy cannot be controlled solely through the global
 boundary condition.  In fact, the local shear kernel can generate a boundary-layer
 near-kernel on a sequence of uniformly refined rectangular meshes.  The next
 proposition records this point; it motivates a minimal local enrichment at lowest
-order.}
+order.
 
 \begin{proposition}[Boundary-layer shear mode for the unenriched $k=1$ space]
 \label{prop:k1-rect-nearkernel}
@@ -1003,7 +1003,7 @@ $\|\boldsymbol v_h\|_{1,h}\lesssim
 \|\varepsilon_h^w(\boldsymbol v_h)\|$ cannot hold for the unenriched
 lowest-order rectangular method.
 \end{proposition}
-\AI{\begin{proof}
+\begin{proof}
 Let
 \[
  \boldsymbol S:=\boldsymbol e_1\otimes\boldsymbol e_2+
@@ -1042,10 +1042,10 @@ gives
  \qquad
  \|\varepsilon_h^w(\boldsymbol v_h)\|^2\lesssim h.
 \]
-\end{proof}}
+\end{proof}
 
 \subsection{A minimal lowest-order enrichment}\label{subsec:k1-enrichment}
-\AI{For the lowest-order method, we use the following local symmetric-tensor space.  For
+For the lowest-order method, we use the following local symmetric-tensor space.  For
 $k=1$ and for a cone $T$ with base face $F$, define
 \begin{equation}\label{eq:sigma1-enriched}
 \widetilde\Sigma_1(T)
@@ -1059,7 +1059,7 @@ $\lambda_{\boldsymbol x_K}|_F=0$.  Hence the enrichment introduces no new
 globally coupled trace unknowns; it changes only the local symmetric-stress
 reconstruction.  Let $\widetilde\Sigma_h^{-1}(K)$ and
 $\widetilde{\mathbb B}_1(\div,K;\mathbb S)$ denote the corresponding broken
-local space and zero-traction bubble space.}
+local space and zero-traction bubble space.
 
 \begin{theorem}[Intrinsic stability of the lowest-order symmetric-tensor space]
 \label{thm:k1-enriched-BM}
@@ -1078,7 +1078,7 @@ where $\widetilde\beta_*$ depends only on the mesh-regularity constants.
 In particular, the result includes two-dimensional rectangles and
 parallelograms.
 \end{theorem}
-\AI{\begin{proof}
+\begin{proof}
 Fix one cone $T\subset K$ with base face $F$.  Relative to the orthogonal
 normal--tangential decomposition associated with $F$, every constant symmetric
 tensor has the unique decomposition
@@ -1107,26 +1107,26 @@ diameter, the three block moments form a uniformly nonsingular finite-dimensiona
 system; shape regularity of the cone gives a lower singular-value bound depending
 only on the mesh-regularity constants.  Scaling back proves
 \eqref{eq:k1-enriched-BM}.
-\end{proof}}
+\end{proof}
 
 \begin{remark}[Unified interpretation]\label{rem:k1-unified}
-\AI{The enrichment \eqref{eq:sigma1-enriched} is precisely the missing
+The enrichment \eqref{eq:sigma1-enriched} is precisely the missing
 normal--tangential zero-traction block at lowest order.  For $k\ge2$ that
 role is played by
 $\lambda_{\boldsymbol x_K}\sym(\mathbb P_{k-2}(T;\mathscr T^F)
 \otimes\boldsymbol n_F)$.  Thus the enriched $k=1$ construction is not a
 penalty or an extrinsic stabilization; it is a minimal local completion of
-the symmetric-stress bubble mechanism.}
+the symmetric-stress bubble mechanism.
 \end{remark}
 
-\AI{Henceforth, when $k=1$ we use the enriched local space
+Henceforth, when $k=1$ we use the enriched local space
 $\widetilde\Sigma_1(T)$ from \eqref{eq:sigma1-enriched}; for $k\ge2$ we use
 $\Sigma_k(T)$ from \eqref{eq:strainspace}.  To avoid a separate notation in
 the remainder of the paper, both cases are denoted by $\Sigma_k(T)$,
 $\Sigma_h^{-1}(K)$, and $\mathbb B_k(\div,K;\mathbb S)$.  With this convention,
 Assumption~\ref{bubbleassumption} is proved for $k=1$ by
 Theorem~\ref{thm:k1-enriched-BM}, and for two-dimensional shape-regular convex
-polygons with $k\ge2$ by Theorem~\ref{thm:bm-convex-polygons}.}
+polygons with $k\ge2$ by Theorem~\ref{thm:bm-convex-polygons}.
 
 \begin{lemma}\label{lemma_DOF}
 Assume Assumption~\ref{bubbleassumption}. For $K\in\mathcal K_h$, the space
@@ -1142,7 +1142,7 @@ $\Sigma_h^{-1}(K)$ is uniquely determined by the following DoFs:
 \end{align}
 \end{subequations}
 \end{lemma}
-\AI{\begin{proof}
+\begin{proof}
 Suppose that all moments vanish.  The face moments imply
 $\boldsymbol\sigma\boldsymbol n=0$ on $\partial K$, hence
 $\boldsymbol\sigma\in\mathbb B_k(\div,K;\mathbb S)$.  The moments
@@ -1155,7 +1155,166 @@ bubble space as its kernel.  Since
 $\dim\mathcal E_K=\dim\mathbb P_{k-1}(K;\mathbb S)$, the number of moments
 in \eqref{SigmaKDoFs} equals $\dim\Sigma_h^{-1}(K)$.  Hence the DoFs are
 unisolvent.
-\end{proof}}
+\end{proof}
+
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[x=0.78cm,y=0.78cm,
+  vertex/.style={circle,fill=black,inner sep=1.0pt},
+  norm/.style={circle,fill=blue!75!black,inner sep=1.7pt},
+  tang/.style={rectangle,fill=red!75!black,minimum size=3.4pt,inner sep=0pt},
+  interior/.style={diamond,fill=teal!75!black,inner sep=2.0pt},
+  traction/.style={circle,draw=purple!80!black,fill=white,line width=.65pt,inner sep=1.55pt},
+  bubble/.style={circle,fill=orange!85!black,inner sep=1.6pt}]
+\foreach \shift/\lab in {0/{(a) Velocity},5.2/{(b) Pressure},10.4/{(c) Local stress}} {
+ \begin{scope}[xshift=\shift cm]
+  \coordinate (A) at (0.3,0.7); \coordinate (B) at (1.2,2.1);
+  \coordinate (C) at (3.0,2.35); \coordinate (D) at (4.0,1.35);
+  \coordinate (E) at (3.25,0.15); \coordinate (F) at (1.25,0.0);
+  \coordinate (O) at (2.14,1.13);
+  \fill[gray!5] (A)--(B)--(C)--(D)--(E)--(F)--cycle;
+  \draw[line width=.85pt] (A)--(B)--(C)--(D)--(E)--(F)--cycle;
+  \foreach \v in {A,B,C,D,E,F} \node[vertex] at (\v) {};
+  \node[font=\small] at (2.05,2.95) {\lab};
+ \end{scope}
+}
+% Panel coordinates are re-established locally to avoid cross-panel references.
+\begin{scope}
+\coordinate (A) at (0.3,0.7); \coordinate (B) at (1.2,2.1);
+\coordinate (C) at (3.0,2.35); \coordinate (D) at (4.0,1.35);
+\coordinate (E) at (3.25,0.15); \coordinate (F) at (1.25,0.0);
+\coordinate (O) at (2.14,1.13);
+\foreach \u/\v in {A/B,B/C,C/D,D/E,E/F,F/A} {
+ \path (\u)--(\v) coordinate[pos=.30] (mone) coordinate[pos=.70] (mtwo);
+ \node[norm] at (mone) {}; \node[norm] at (mtwo) {};
+ \path (\u)--(\v) coordinate[pos=.5] (mid);
+ \node[tang] at (mid) {};
+}
+\node[interior] at (O) {};
+\end{scope}
+\begin{scope}[xshift=5.2cm]
+\coordinate (O) at (2.14,1.13);
+\node[interior,fill=purple!75!black,inner sep=3.5pt] at (O) {};
+\end{scope}
+\begin{scope}[xshift=10.4cm]
+\coordinate (A) at (0.3,0.7); \coordinate (B) at (1.2,2.1);
+\coordinate (C) at (3.0,2.35); \coordinate (D) at (4.0,1.35);
+\coordinate (E) at (3.25,0.15); \coordinate (F) at (1.25,0.0);
+\coordinate (O) at (2.14,1.13);
+\foreach \v in {A,B,C,D,E,F} \draw[dashed,gray!75,line width=.55pt] (O)--(\v);
+\filldraw[fill=white,draw=black] (O) circle (1.8pt);
+\node[font=\scriptsize,anchor=west] at (2.24,1.30) {$x_K$};
+\foreach \u/\v in {A/B,B/C,C/D,D/E,E/F,F/A} {
+  \path (\u)--(\v) coordinate[pos=.22] (mone) coordinate[pos=.50] (mtwo) coordinate[pos=.78] (mthree);
+  \node[traction] at (mone) {}; \node[traction] at (mtwo) {}; \node[traction] at (mthree) {};
+  \path (O)--($(\u)!.5!(\v)$) coordinate[pos=.55] (ib);
+  \node[bubble] at (ib) {};
+}
+\end{scope}
+% compact panel legends, centered beneath the respective polygons
+\node[align=center,font=\tiny,text width=4.2cm,anchor=north] at (2.0,-.38)
+ {\textcolor{blue!75!black}{$\bullet$} 2 normal moments / edge; 
+  \textcolor{red!75!black}{$\blacksquare$} 1 tangential / edge\\
+  \textcolor{teal!75!black}{$\blacklozenge$} 1 interior velocity moment};
+\node[align=center,font=\tiny,text width=4.2cm,anchor=north] at (8.67,-.38)
+ {$\textcolor{purple!75!black}{\blacklozenge}$ 1 cellwise constant moment\\
+  no continuity across polygon edges};
+\node[align=center,font=\tiny,text width=4.2cm,anchor=north] at (15.33,-.38)
+ {\textcolor{purple!75!black}{$\circ$} 3 traction moments / edge\\
+  \textcolor{orange!85!black}{$\bullet$} cone-supported bubble modes (schematic)\\
+  polygon-interior tensor moments (see Table~\ref{tab:k1-dof-count})};
+\end{tikzpicture}%
+}
+\par\smallskip
+\begin{tikzpicture}[x=0.78cm,y=0.78cm,baseline=(current bounding box.center)]
+  % One cone, with its outer primal edge and local tensor decomposition.
+  \coordinate (X) at (0.1,0.15);
+  \coordinate (L) at (1.05,1.85);
+  \coordinate (R) at (3.25,1.85);
+  \fill[orange!7] (X)--(L)--(R)--cycle;
+  \draw[thick] (X)--(L)--(R)--cycle;
+  \draw[line width=1.1pt,purple!70!black] (L)--(R);
+  \filldraw[black] (X) circle (1.5pt);
+  \node[below left,font=\scriptsize] at (X) {$x_K$};
+  \node[above,font=\scriptsize] at ($(L)!.5!(R)$) {$F$};
+  \node[font=\scriptsize] at (1.55,1.12) {$T_F$};
+  \coordinate (M) at (2.15,1.85);
+  \draw[->,blue!70!black,thick] (M)--++(0,0.68)
+    node[above,font=\scriptsize] {$\boldsymbol n_F$};
+  \draw[->,red!70!black,thick] (M)--++(0.85,0)
+    node[right,font=\scriptsize] {$\boldsymbol t_F$};
+  \node[anchor=west,font=\scriptsize,align=left,text width=9.7cm]
+    at (3.9,1.55) {\textbf{One-cone inset ($k=1$):}\\[2pt]
+    $\mathbb P_1(T_F)\,\boldsymbol n_F\otimes\boldsymbol n_F$
+    \quad (3 normal--normal modes)\\[2pt]
+    $\operatorname{span}\{1,\lambda_{\boldsymbol x_K}\}
+       \operatorname{sym}(\boldsymbol t_F\otimes\boldsymbol n_F)$
+    \quad (2 normal--tangential modes)\\[2pt]
+    $\mathbb P_0(T_F)\,\boldsymbol t_F\otimes\boldsymbol t_F$
+    \quad (1 tangential--tangential mode)};
+  \node[anchor=west,font=\scriptsize,text=orange!65!black]
+    at (3.9,0.0) {$\lambda_{\boldsymbol x_K}|_F=0$:
+    added mode has zero traction on the outer edge.};
+\end{tikzpicture}
+\caption{Degrees of freedom and local reconstruction for $k=1$ on a hexagonal polygon $K$.
+(a) The $H(\operatorname{div})$ velocity has two normal moments per edge and one interior
+moment; the separate tangential trace has one moment per edge.
+(b) The pressure has one cellwise constant moment.
+(c) The enriched symmetric-tensor space is broken over the six cones
+$T_F=\operatorname{conv}(x_K,F)$, where $x_K$ is the centroid. Each outer edge
+has three local traction moments (two normal and one tangential). The orange symbols
+indicate cone-supported bubble modes schematically, not individual degrees of freedom.
+The inset displays the six local tensor modes on one cone, including the added normal--tangential bubble. The remaining interior tensor degrees of freedom are the three constant symmetric-tensor
+moments and $\dim\mathcal Z_K=3N_K-3$ kernel moments, where $N_K$ is the number of edges.
+Stress traction is not constrained to be continuous across radial cone interfaces or
+between adjacent polygons, and the stress reconstruction adds no globally coupled unknowns.}
+\label{fig:k1-dofs}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Local degrees of freedom for $k=1$ on a polygon $K$ with
+$N_K$ edges. The enriched symmetric-stress space has six local
+coefficients per cone, but introduces no globally coupled stress unknowns.}
+\label{tab:k1-dof-count}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Variable & DoF family & General $N_K$ & $N_K=6$ \\
+\midrule
+Velocity & Edge normal moments & $2N_K$ & 12 \\
+         & Edge tangential moments & $N_K$ & 6 \\
+         & Interior Type III moment & $1$ & 1 \\
+\cmidrule(lr){2-4}
+         & Total & $3N_K+1$ & 19 \\
+\midrule
+Pressure & Interior constant moment & $1$ & 1 \\
+\midrule
+Stress & Outer-edge traction moments & $3N_K$ & 18 \\
+       & Interior constant tensor moments & $3$ & 3 \\
+       & Interior kernel moments ($\mathcal Z_K$) & $3N_K-3$ & 15 \\
+\cmidrule(lr){2-4}
+       & Total (local) & $6N_K$ & 36 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Cost of the lowest-order enrichment]
+For $k=1$, the original local symmetric-tensor space has five
+polynomial coefficients per cone, whereas the enriched space
+\eqref{eq:sigma1-enriched} has six. Thus the dimension of the
+polygon-local stress space increases from $5N_K$ to $6N_K$,
+with precisely one additional normal--tangential bubble mode
+on each cone $T_F$. Since this mode has zero traction on the
+outer edge $F$, the number of outer-edge stress traction moments
+remains $3N_K$. The enrichment changes neither the velocity nor
+the pressure degrees of freedom and introduces no globally
+coupled stress unknowns. Moreover, because the tensor space is
+broken across cones, its $L^2$ mass matrix is block diagonal
+with respect to the cone subdivision: for $k=1$, the cone blocks
+increase only from size $5\times5$ to $6\times6$.
+\end{remark}
 
 \begin{lemma}[Stable local lifting]\label{lem:stable-local-lifting}
 Assume Assumption~\ref{bubbleassumption}.  Given
@@ -1170,7 +1329,7 @@ $\boldsymbol r_F$, and whose $\mathcal Z_K$ moments vanish. Moreover,
 \sum_{F\subset\partial K}h_K^{1/2}\|\boldsymbol r_F\|_F .
 \end{equation}
 \end{lemma}
-\AI{\begin{proof}
+\begin{proof}
 We construct the lifting in two stages, to exhibit the uniform
 constant. Decompose each prescribed face vector as
 $\boldsymbol r_F=r_F^n\boldsymbol n_F+\boldsymbol r_F^t$.
@@ -1235,7 +1394,7 @@ are orthogonal to $\mathcal Z_K$. The estimates above imply
 which is stronger than \eqref{eq:stable-local-lifting}.
 Existence follows from this construction and uniqueness from
 Lemma~\ref{lemma_DOF}.
-\end{proof}}
+\end{proof}
 
 Let
 \[
@@ -1257,9 +1416,9 @@ we define \(\varepsilon^w_h(\boldsymbol{v}) \in \Sigma_h^{-1}\) satisfying \( \v
 \end{aligned}
 \end{equation}
 for all $\boldsymbol\sigma\in\Sigma_h^{-1}(K)$, with $\Pi_F$ applied facewise.
-\AI{Since $\boldsymbol\sigma$ is discontinuous inside $K$, integration by
+Since $\boldsymbol\sigma$ is discontinuous inside $K$, integration by
 parts must include the internal jumps of $\boldsymbol\sigma\boldsymbol n$.
-Dropping these terms does not give an equivalent definition.}
+Dropping these terms does not give an equivalent definition.
 
 The normal and tangential boundary jumps are
 \[
@@ -1296,7 +1455,7 @@ For $\boldsymbol v_h\in\boldsymbol V_h$, define the mesh-dependent seminorm
 \]
 where the seminorm on each element is defined as
 \[
-\AI{\|\boldsymbol{v}_h\|_{1,h,K}^2 := \|\varepsilon (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})\|_K^2 + h_K^{-1}\|\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}^2.}
+\|\boldsymbol{v}_h\|_{1,h,K}^2 := \|\varepsilon (\boldsymbol{\Pi}_K^o \boldsymbol{v}_h^{\operatorname{div}})\|_K^2 + h_K^{-1}\|\boldsymbol{\Pi}_{\partial K}\mathcal{J}_{\partial K}(\boldsymbol{v}_h)\|_{\partial K}^2.
 \]
 
 
@@ -1308,7 +1467,7 @@ The mesh-dependent quantity
 defines a norm on the virtual element space \(\boldsymbol{V}_h\).
 \end{lemma}
 
-\AI{\begin{proof}
+\begin{proof}
 If $\|\boldsymbol v_h\|_{1,h}=0$, then on each $K$,
 $\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}=\boldsymbol r_K
 \in\mathbf{RM}(K)$, and
@@ -1329,9 +1488,9 @@ The normal face moments and all polynomial volume moments of
 $\boldsymbol v_h^{\operatorname{div}}$ now vanish. Unisolvence of
 $\boldsymbol V_K$ gives $\boldsymbol v_h^{\operatorname{div}}=0$,
 and the tangential identity gives $\boldsymbol v_h^t=0$.
-\end{proof}}
+\end{proof}
 
-\AI{We also need control of the full jump. For
+We also need control of the full jump. For
 $\boldsymbol w=\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}$,
 Korn's inequality modulo rigid motions gives a $\boldsymbol r_K\in\mathbf{RM}(K)$
 such that
@@ -1364,7 +1523,7 @@ on the simplicial refinement therefore gives the global equivalence
 +h_K^{-1}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol v_h)\|_{\partial K}^2
 \right).
 \end{equation}
-This equivalence is global; it does not hold on an individual element.}
+This equivalence is global; it does not hold on an individual element.
 
 \begin{lemma} \label{lem:discinf-sup}
 We have the discrete inf-sup condition
@@ -1373,7 +1532,7 @@ We have the discrete inf-sup condition
 \frac{\sum_{K\in\mathcal{K}_h}(\varepsilon_K^w(\boldsymbol{v}), \boldsymbol{\sigma}_h)_K}{\|\boldsymbol{\sigma}_h\|_{0,h}}\quad\forall~\boldsymbol{v}\in\boldsymbol V_h.
 \end{equation}
 \end{lemma}
-\AI{\begin{proof}
+\begin{proof}
 Here $\|\boldsymbol\sigma\|_{0,h}^2:=\sum_K\|\boldsymbol\sigma\|_K^2$.
 For fixed $\boldsymbol v\in\boldsymbol V_h$, use Lemma~\ref{lemma_DOF}
 to choose $\boldsymbol\sigma|_K\in\Sigma_h^{-1}(K)$ with
@@ -1405,7 +1564,7 @@ Applying the stable local lifting, Lemma~\ref{lem:stable-local-lifting}, with th
 \]
 Substitute this tensor into the supremum in \eqref{eq:discinfsup}.
 The result follows for $\boldsymbol v\ne0$; the zero case is immediate.
-\end{proof}}
+\end{proof}
 
 
 
@@ -1482,7 +1641,7 @@ $p_h+Q_h\phi$.
 \end{remark}
 
 
-\AI{\subsection{Local viscous stress and equivalent formulation}
+\subsection{Local viscous stress and equivalent formulation}
 The viscosity is normalized so that the physical viscous stress is
 $\boldsymbol\tau=\varepsilon(\boldsymbol u)$ and the total Cauchy stress is
 $\boldsymbol\sigma=\boldsymbol\tau-p\boldsymbol I$.
@@ -1514,10 +1673,10 @@ The following proposition records three structural properties of the
 reconstructed stress. The tensor
 $\boldsymbol\sigma_h=\boldsymbol\tau_h-p_h\boldsymbol I$ is symmetric
 on each cone, but neither traction continuity nor a strong local
-momentum balance is asserted.}
+momentum balance is asserted.
 
 
-\AI{\begin{proposition}[Symmetry, energy identity, and bubble orthogonality of the reconstructed stress]
+\begin{proposition}[Symmetry, energy identity, and bubble orthogonality of the reconstructed stress]
 \label{prop:stress-properties}
 Let $\boldsymbol\tau_h=\varepsilon_h^w(\boldsymbol u_h)$ and set
 $\boldsymbol G_K=\varepsilon(\boldsymbol\Pi_K^o
@@ -1547,7 +1706,7 @@ The reconstructed total stress
 $\boldsymbol\sigma_h=\boldsymbol\tau_h-p_h\boldsymbol I$ is
 strongly symmetric elementwise. The reconstruction does not, in
 general, impose continuity of $\boldsymbol\sigma_h\boldsymbol n$
-across element interfaces or strong elementwise momentum equilibrium.}
+across element interfaces or strong elementwise momentum equilibrium.
 
 \begin{lemma}
 For every
@@ -1594,7 +1753,7 @@ For $\boldsymbol v_h\in\boldsymbol V_h$ and $q_h\in S_h$,
 |b(\boldsymbol v_h,q_h)|\lesssim\|\boldsymbol v_h\|_{1,h}\|q_h\|.
 \]
 \end{lemma}
-\AI{\begin{proof}
+\begin{proof}
 Write $\boldsymbol w=\boldsymbol\Pi_K^o\boldsymbol v_h^{\operatorname{div}}$.
 For $q\in\mathbb P_{k-1}(K)$, the volume projection and integration by parts give
 \[
@@ -1608,7 +1767,7 @@ trace inequality, and $|\operatorname{div}\boldsymbol w|\leq
 $\|\operatorname{div}\boldsymbol v_h^{\operatorname{div}}\|_K
 \lesssim\|\boldsymbol v_h\|_{1,h,K}$.
 Sum over $K$ and apply the Cauchy--Schwarz inequality.
-\end{proof}}
+\end{proof}
 
 \begin{lemma}\label{lem:12}
 For every $p_h\in S_h$, there is a $\boldsymbol v_h\in\boldsymbol V_h$ with
@@ -1622,7 +1781,7 @@ For every $p_h\in S_h$, there is a $\boldsymbol v_h\in\boldsymbol V_h$ with
 For $\boldsymbol v\in\boldsymbol H^1(K)$, define
 $\boldsymbol I_K^{\operatorname{div}}\boldsymbol v\in\boldsymbol V_K$
 by matching its Type I--III DoFs with those of $\boldsymbol v$.
-\AI{Integration by parts with $q\in\mathbb P_{k-1}(K)$ gives the commuting identity
+Integration by parts with $q\in\mathbb P_{k-1}(K)$ gives the commuting identity
 \begin{equation}\label{eq:commuting}
 \operatorname{div}\boldsymbol I_K^{\operatorname{div}}\boldsymbol v
 =Q_h(\operatorname{div}\boldsymbol v)|_K,
@@ -1646,9 +1805,9 @@ approximant in \eqref{eq:Istability} yields
 \begin{equation}\label{eq:Iapprox}
 \|\boldsymbol v-\boldsymbol I_K^{\operatorname{div}}\boldsymbol v\|_K
 \lesssim h_K^{k+1}|\boldsymbol v|_{k+1,K}.
-\end{equation}}
+\end{equation}
 
-\AI{\begin{proof}[Proof of Lemma~\ref{lem:12}]
+\begin{proof}[Proof of Lemma~\ref{lem:12}]
 The continuous divergence right inverse \cite{BBF2013} provides
 $\boldsymbol v\in\boldsymbol H_0^1(\Omega)$ with
 $\operatorname{div}\boldsymbol v=p_h$ and
@@ -1683,7 +1842,7 @@ Together with Lemmas~\ref{lem:10} and \ref{lem:11}, this proves that
 \eqref{eq:scheme} has a unique solution \cite{BBF2013}.
 Also, $\operatorname{div}\boldsymbol u_h^{\operatorname{div}}\in S_h$;
 testing the second equation with this divergence shows that it vanishes
-on every element.}
+on every element.
 
 \subsection{Error equations}
 Assume $(\boldsymbol u,p)\in
@@ -1695,7 +1854,7 @@ Set
 \qquad \boldsymbol u_I^t|_F=\boldsymbol\Pi_{\partial K}^t\boldsymbol u,
 \qquad p_I=Q_hp.
 \]
-\AI{For later use, \eqref{eq:Iapprox}, polynomial approximation, and inverse
+For later use, \eqref{eq:Iapprox}, polynomial approximation, and inverse
 estimates imply
 \begin{equation}\label{eq:projected-approx}
 \begin{aligned}
@@ -1722,9 +1881,9 @@ projections, \eqref{eq:projected-approx} also gives
 \begin{equation}\label{eq:interpolant-jump}
 h_K^{-1/2}\|\boldsymbol\Pi_{\partial K}\mathcal J_{\partial K}(\boldsymbol u_I)\|_{\partial K}
 \lesssim h_K^k|\boldsymbol u|_{k+1,K}.
-\end{equation}}
+\end{equation}
 
-\AI{Set $e_h=\boldsymbol u_h-\boldsymbol u_I$ and $\xi_h=p_h-p_I$.
+Set $e_h=\boldsymbol u_h-\boldsymbol u_I$ and $\xi_h=p_h-p_I$.
 The error equation is
 Write $\boldsymbol E_K=\varepsilon(\boldsymbol u)-
 \varepsilon(\boldsymbol\Pi_K^o\boldsymbol u_I^{\operatorname{div}})$ and
@@ -1762,9 +1921,9 @@ By \eqref{eq:commuting}, $\operatorname{div}\boldsymbol u_I^{\operatorname{div}}
 Hence
 \begin{equation}\label{eq:divergenceerror}
 b(e_h,q_h)=0\qquad\forall q_h\in S_h.
-\end{equation}}
+\end{equation}
 
-\AI{We estimate the four terms in \eqref{eq:erroreq} in order.
+We estimate the four terms in \eqref{eq:erroreq} in order.
 The volume strain term is bounded by \eqref{eq:strain-approx} and the norm
 of $\boldsymbol v_h$. The boundary strain term uses the same approximation
 estimate and the full-jump bound \eqref{eq:fulljump}.
@@ -1789,7 +1948,7 @@ The Cauchy--Schwarz inequality yields
 \begin{equation}\label{eq:residual-bound}
 |\mathcal R(\boldsymbol v_h)|\lesssim
 h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k)\|\boldsymbol v_h\|_{1,h}.
-\end{equation}}
+\end{equation}
 
 \subsection{Error estimates}
 Taking $\boldsymbol v_h=e_h$ in \eqref{eq:erroreq} and
@@ -1801,7 +1960,7 @@ Therefore, \eqref{eq:residual-bound} implies
 \[
 \|e_h\|_{1,h}\lesssim h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
 \]
-\AI{For the pressure, \eqref{eq:pressure-infsup} and \eqref{eq:erroreq} give
+For the pressure, \eqref{eq:pressure-infsup} and \eqref{eq:erroreq} give
 \[
 \begin{aligned}
 \|\xi_h\|&\lesssim\sup_{0\ne\boldsymbol v_h\in\boldsymbol V_h}
@@ -1809,9 +1968,9 @@ Therefore, \eqref{eq:residual-bound} implies
 &\lesssim\|e_h\|_{1,h}+h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
 \end{aligned}
 \]
-Thus $\|\xi_h\|$ has the same bound.}
+Thus $\|\xi_h\|$ has the same bound.
 
-\AI{In the velocity error norm, identify the smooth velocity with the pair
+In the velocity error norm, identify the smooth velocity with the pair
 $\{\boldsymbol u,\boldsymbol\Pi_{\partial K}^t\boldsymbol u\}$, and use the same
 norm formula with the $L^2$ volume projector.
 Polynomial approximation and \eqref{eq:Iapprox} give
@@ -1820,10 +1979,10 @@ The triangle inequality and $\|p-Q_hp\|\lesssim h^k\|p\|_k$ then yield
 \begin{equation}\label{eq:final-error}
 \|\boldsymbol u-\boldsymbol u_h\|_{1,h}+\|p-p_h\|
 \lesssim h^k(\|\boldsymbol u\|_{k+1}+\|p\|_k).
-\end{equation}}
+\end{equation}
 
 
-\AI{\begin{theorem}[Error estimate for the reconstructed viscous stress]
+\begin{theorem}[Error estimate for the reconstructed viscous stress]
 \label{thm:stress-error}
 Under the assumptions of the preceding velocity--pressure error estimate,
 let $\boldsymbol\tau=\varepsilon(\boldsymbol u)$ and
@@ -1880,13 +2039,13 @@ and the discrete velocity estimate proved above imply
 \end{aligned}
 \]
 as claimed.
-\end{proof}}
+\end{proof}
 
 \input{numerics}
 
 
 \clearpage
-\AI{\begin{thebibliography}{12}
+\begin{thebibliography}{12}
 \bibitem{BBCMMR2013}
 L. Beir\~ao da Veiga, F. Brezzi, A. Cangiani, G. Manzini, L. D. Marini, and A. Russo,
 \emph{Basic principles of virtual element methods},
@@ -1942,6 +2101,6 @@ L. Mu, X. Ye, and S. Zhang,
 finite element method for the Stokes equations on polytopal mesh},
 SIAM J. Sci. Comput., 43 (2021), pp. A2614--A2637,
 \url{https://doi.org/10.1137/20M1380405}.
-\end{thebibliography}}
+\end{thebibliography}
 
 \end{document}
